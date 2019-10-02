@@ -2,18 +2,26 @@ name: frontend
 version: 0.1
 cabal-version: >= 1.8
 build-type: Simple
+extra-source-files: frontend/src/Tutorial.md
 
 library
   hs-source-dirs: src
   build-depends: base
+               , blaze-html
+               , cheapskate
                , common
-               , obelisk-frontend
-               , obelisk-route
-               , reflex-dom
-               , obelisk-executable-config-lookup
-               , obelisk-generated-static
-               , text
+               , containers
+               , file-embed
+               , ghcjs-dom
+               , jsaddle
                , markdown-unlit
+               , obelisk-executable-config-lookup
+               , obelisk-frontend
+               , obelisk-generated-static
+               , obelisk-route
+               , reflex
+               , reflex-dom
+               , text
   exposed-modules:
     Frontend
     Tutorial

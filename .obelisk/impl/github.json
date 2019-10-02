@@ -1,7 +1,7 @@
 {
   "owner": "obsidiansystems",
   "repo": "obelisk",
-  "branch": "aa-use-ghc-options",
-  "rev": "486ef09fcafd047f4bae609340f89e908778a7f7",
-  "sha256": "0r7kxn58nmp8k746bmgfync5kjy235rcq91mi6cdycjprwshar9m"
+  "branch": "develop",
+  "rev": "513a12aeafc9f698266e8d9e7256d8b868b6404b",
+  "sha256": "1w1f2gk25hlwzzcmr17xfi14sn6yj5c0iyp6sla013cna8h4ph0k"
 }
