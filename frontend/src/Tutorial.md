@@ -16,12 +16,16 @@ You can run this tutorial by:
 
 1. Cloning this repository.
 
-    git clone git@github.com:reflex-frp/reflex-calculator-tutorial
+    ```bash
+    git clone git@github.com:reflex-frp/reflex-calculator-tutorial`
+    ```
 
 1. Running the application with the `ob` command.
 
+    ```bash
     cd reflex-calculator-tutorial
     ob run
+    ```
 
 1. Navigating to [http://localhost:8000](http://localhost:8000). If you want to run it at a different hostname or port, modify the `config/common/route` configuration file.
 
@@ -64,7 +68,7 @@ Reflex's companion library, Reflex-Dom, contains a number of functions used to b
 tutorial1 :: DomBuilder t m => m ()
 tutorial1 = el "div" $ text "Welcome to Reflex"
 ```
-[Go to snippet](/tutorial/1)
+[Go to snippet](http://localhost:8000/tutorial/1)
 
 `el` has the type signature:
 
@@ -97,7 +101,7 @@ tutorial2 = el "div" $ do
    el "li" $ text "Higher-order"
    el "li" $ text "Glitch-free"
 ```
-[Go to snippet](/tutorial/2)
+[Go to snippet](http://localhost:8000/tutorial/2)
 
 ### Dynamics and Events
 Of course, we want to do more than just view a static webpage. Let's start by getting some user input and printing it.
@@ -109,7 +113,7 @@ tutorial3 = el "div" $ do
   dynText $ _inputElement_value t
 
 ```
-[Go to snippet](/tutorial/3)
+[Go to snippet](http://localhost:8000/tutorial/3)
 
 Running this in your browser, you'll see that it produces a `div` containing an `input` element. When you type into the `input` element, the text you enter appears inside the div as well.
 
@@ -149,7 +153,7 @@ tutorial4 = el "div" $ do
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
   dynText $ _inputElement_value t
 ```
-[Go to snippet](/tutorial/4)
+[Go to snippet](http://localhost:8000/tutorial/4)
 
 The code above overrides some of the default values of the `InputElementConfig`. We provide a `Map Text Text` value for the `inputElementConfig_elementConfig`'s `elementConfig_initialAttributes`, specifying the html input element's `type` attribute to `number`.
 
@@ -171,7 +175,7 @@ tutorial5 = el "div" $ do
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
 ```
-[Go to snippet](/tutorial/5)
+[Go to snippet](http://localhost:8000/tutorial/5)
 
 We've defined a function `numberInput` that both handles the creation of the `InputElement` and reads its value. Recall that `_inputElement_value` gives us a `Dynamic Text`. The final line of code in `numberInput` uses `fmap` to apply the function `readMaybe . unpack` to the `Dynamic` value of the `InputElement`. This produces a `Dynamic (Maybe Double)`. Our `main` function uses `fmap` to map over the `Dynamic (Maybe Double)` produced by `numberInput` and `pack . show` the value it contains. We store the new `Dynamic Text` in `numberString` and feed that into `dynText` to actually display the `Text`
 
@@ -198,7 +202,7 @@ tutorial6 = el "div" $ do
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
 ```
-[Go to snippet](/tutorial/6)
+[Go to snippet](http://localhost:8000/tutorial/6)
 
 `numberInput` hasn't changed here. Our `main` function now creates two inputs. `zipDynWith` is used to produce the actual sum of the values of the inputs. The type signature of `zipDynWith` is:
 
@@ -270,7 +274,7 @@ tutorial7 = el "div" $ do
                 Times -> (*)
                 Divide -> (/)
 ```
-[Go to snippet](/tutorial/7)
+[Go to snippet](http://localhost:8000/tutorial/7)
 
 This is our complete program. We've added an uninteresting function `runOp` that takes an `Op` and returns an operation. The keys of the `Map` we used to create the `Dropdown` had the type `Op`. When we retrieve the value of `Dropdown`, we'll use `runOp` to turn the `Dropdown` selection into the function we need to apply to our numbers.
 
@@ -377,6 +381,6 @@ tutorial8 = el "div" $ do
                 Times -> (*)
                 Divide -> (/)
 ```
-[Go to snippet](/tutorial/8)
+[Go to snippet](http://localhost:8000/tutorial/8)
 
 The input border colors will now change depending on their value.

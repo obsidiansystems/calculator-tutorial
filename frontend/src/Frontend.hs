@@ -13,13 +13,16 @@ import Control.Concurrent (threadDelay)
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Data.FileEmbed (embedFile)
+import qualified Data.Map as Map
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Text.Lazy (toStrict)
 import GHCJS.DOM.Document (getElementsByTagName)
 import GHCJS.DOM.Element (setInnerHTML)
 import GHCJS.DOM.HTMLCollection (getLength)
 import Language.Javascript.JSaddle (eval, liftJSM)
+import Obelisk.Configs (HasConfigs, getConfigs)
 import Obelisk.Frontend
 import Obelisk.Generated.Static
 import Obelisk.Route.Frontend (R, subRoute_)
@@ -29,8 +32,14 @@ import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Common.Route
 import Tutorial
 
-md :: Text
-md = decodeUtf8 $(embedFile "README.md")
+rawMarkdown :: Text
+rawMarkdown = decodeUtf8 $(embedFile "README.md")
+
+rewriteLinks :: HasConfigs m => Text -> m Text
+rewriteLinks md = do
+  (fmap (T.strip . decodeUtf8) . Map.lookup "common/route" <$> getConfigs) >>= pure . \case
+    Nothing -> md
+    Just r -> T.replace "http://localhost:8000" r md
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -50,7 +59,7 @@ frontend = Frontend
   , _frontend_body = subRoute_ $ \case
       FrontendRoute_Main -> prerender_ blank $ do
         (container, _) <- elAttr' "div" ("class" =: "container") blank
-        let tutorialHtml = toStrict $ renderHtml $ renderDoc $ markdown def md
+        tutorialHtml <- toStrict . renderHtml . renderDoc . markdown def <$> rewriteLinks rawMarkdown
         doc <- askDocument
         liftJSM $ forkJSM $ do
           setInnerHTML (_element_raw container) tutorialHtml
