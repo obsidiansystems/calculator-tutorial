@@ -14,20 +14,20 @@ You can run this tutorial by:
 
 1. [Installing obelisk](https://github.com/obsidiansystems/obelisk/#installing-obelisk), a framework and development tool for multi-platform Haskell applications.
 
-1. Cloning this repository.
+2. Cloning this repository.
 
     ```bash
-    git clone git@github.com:reflex-frp/reflex-calculator-tutorial`
+    git clone git@github.com:reflex-frp/reflex-calculator-tutorial
     ```
 
-1. Running the application with the `ob` command.
+3. Running the application with the `ob` command.
 
     ```bash
     cd reflex-calculator-tutorial
     ob run
     ```
 
-1. Navigating to [http://localhost:8000](http://localhost:8000). If you want to run it at a different hostname or port, modify the `config/common/route` configuration file.
+4. Navigating to [http://localhost:8000](http://localhost:8000). If you want to run it at a different hostname or port, modify the `config/common/route` configuration file.
 
 While `ob run` is running the application, any changes to this source file will cause the code to be reloaded and the application to be restarted. If the changes have introduced any errors or warnings, you'll see those in the `ob run` window. Tinker away!
 

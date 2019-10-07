@@ -8,12 +8,16 @@
   }
 }:
 with obelisk;
-project ./. ({ pkgs, ... }: {
+project ./. ({ pkgs, hackGet, ... }:
+with pkgs.haskell.lib; {
   android.applicationId = "systems.obsidian.obelisk.examples.minimal";
   android.displayName = "Obelisk Minimal Example";
   ios.bundleIdentifier = "systems.obsidian.obelisk.examples.minimal";
   ios.bundleName = "Obelisk Minimal Example";
+  __closureCompilerOptimizationLevel = null;
   overrides = self: super: {
-    temporary = pkgs.haskell.lib.dontCheck super.temporary;
+    temporary = dontCheck super.temporary;
+    email-validate = dontCheck super.email-validate;
+    mmark = dontHaddock (self.callCabal2nix "mmark" (hackGet ./dep/mmark) {});
   };
 })

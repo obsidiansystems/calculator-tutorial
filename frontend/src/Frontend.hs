@@ -7,8 +7,6 @@
 {-# LANGUAGE TypeFamilies #-}
 module Frontend where
 
-import Cheapskate.Parse (markdown)
-import Cheapskate.Html (renderDoc)
 import Control.Concurrent (threadDelay)
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
@@ -19,7 +17,6 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Data.Text.Lazy (toStrict)
 import GHCJS.DOM.Document (getElementsByTagName)
-import GHCJS.DOM.Element (setInnerHTML)
 import GHCJS.DOM.HTMLCollection (getLength)
 import Language.Javascript.JSaddle (eval, liftJSM)
 import Obelisk.Configs (HasConfigs, getConfigs)
@@ -27,7 +24,8 @@ import Obelisk.Frontend
 import Obelisk.Generated.Static
 import Obelisk.Route.Frontend (R, subRoute_)
 import Reflex.Dom.Core
-import Text.Blaze.Html.Renderer.Text (renderHtml)
+import qualified Text.MMark as MMark
+import qualified Lucid.Base as Lucid (renderText)
 
 import Common.Route
 import Tutorial
@@ -37,9 +35,10 @@ rawMarkdown = decodeUtf8 $(embedFile "README.md")
 
 rewriteLinks :: HasConfigs m => Text -> m Text
 rewriteLinks md = do
-  (fmap (T.strip . decodeUtf8) . Map.lookup "common/route" <$> getConfigs) >>= pure . \case
+  route <- Map.lookup "common/route" <$> getConfigs
+  pure $ case route of
     Nothing -> md
-    Just r -> T.replace "http://localhost:8000" r md
+    Just r -> T.replace "http://localhost:8000" (T.strip $ decodeUtf8 r) md
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -58,11 +57,15 @@ frontend = Frontend
     elAttr "script" ("src" =: static @"highlight/highlight.pack.js") blank
   , _frontend_body = subRoute_ $ \case
       FrontendRoute_Main -> prerender_ blank $ do
-        (container, _) <- elAttr' "div" ("class" =: "container") blank
-        tutorialHtml <- toStrict . renderHtml . renderDoc . markdown def <$> rewriteLinks rawMarkdown
+        parseResult <- MMark.parse "README.md" <$> rewriteLinks rawMarkdown
+        case parseResult of
+          Left err -> do
+            liftIO $ print err
+            text "Oops! Couldn't parse README.md. Is it valid markdown?"
+          Right parsed -> void $ elDynHtmlAttr' "div" ("class" =: "container") $ pure $
+            toStrict . Lucid.renderText $ MMark.render parsed
         doc <- askDocument
         liftJSM $ forkJSM $ do
-          setInnerHTML (_element_raw container) tutorialHtml
           let wait = do
                 els <- getElementsByTagName doc ("pre" :: Text)
                 n <- getLength els

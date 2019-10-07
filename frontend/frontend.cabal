@@ -7,14 +7,14 @@ extra-source-files: frontend/src/Tutorial.md
 library
   hs-source-dirs: src
   build-depends: base
-               , blaze-html
-               , cheapskate
                , common
                , containers
                , file-embed
                , ghcjs-dom
                , jsaddle
+               , lucid
                , markdown-unlit
+               , mmark
                , obelisk-executable-config-lookup
                , obelisk-frontend
                , obelisk-generated-static
