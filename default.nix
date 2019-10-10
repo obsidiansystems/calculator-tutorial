@@ -19,5 +19,8 @@ with pkgs.haskell.lib; {
     temporary = dontCheck super.temporary;
     email-validate = dontCheck super.email-validate;
     mmark = dontHaddock (self.callCabal2nix "mmark" (hackGet ./dep/mmark) {});
+    frontend = overrideCabal super.frontend (drv: {
+      buildTools = (drv.buildTools or []) ++ [ self.buildHaskellPackages.markdown-unlit ];
+    });
   };
 })
