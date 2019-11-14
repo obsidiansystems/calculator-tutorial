@@ -43,6 +43,7 @@ Because this is one big source file, all of our functions will share a set of im
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecursiveDo #-}
 
 module Tutorial where
@@ -56,6 +57,9 @@ import Text.Read (readMaybe)
 import Control.Applicative ((<*>), (<$>))
 import Control.Monad.Fix (MonadFix)
 
+import Control.Monad.Fix (mfix)
+import QQ
+
 ```
 
 That's all for the preliminaries. Let's get to it!
@@ -65,8 +69,10 @@ That's all for the preliminaries. Let's get to it!
 Reflex's companion library, Reflex-Dom, contains a number of functions used to build and interact with the Document Object Model. Let's start by getting a basic frontend up and running.
 
 ```haskell
+[exampleDec|
 tutorial1 :: DomBuilder t m => m ()
 tutorial1 = el "div" $ text "Welcome to Reflex"
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/1)
 
@@ -93,6 +99,7 @@ text :: MonadWidget t m => Text -> m ()
 `text` takes a `Text` and produces a `Widget`. The `Text` becomes a text DOM node in the parent element of the `text`. Of course, instead of a `Text`, we could have used `el` here as well to continue building arbitrarily complex DOM. For instance, if we wanted to make a unordered list:
 
 ```haskell
+[exampleDec|
 tutorial2 :: DomBuilder t m => m ()
 tutorial2 = el "div" $ do
  el "p" $ text "Reflex is:"
@@ -100,6 +107,7 @@ tutorial2 = el "div" $ do
    el "li" $ text "Efficient"
    el "li" $ text "Higher-order"
    el "li" $ text "Glitch-free"
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/2)
 
@@ -107,11 +115,12 @@ tutorial2 = el "div" $ do
 Of course, we want to do more than just view a static webpage. Let's start by getting some user input and printing it.
 
 ```haskell
+[exampleDec|
 tutorial3 :: (DomBuilder t m, PostBuild t m) => m ()
 tutorial3 = el "div" $ do
   t <- inputElement def
   dynText $ _inputElement_value t
-
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/3)
 
@@ -146,12 +155,14 @@ Here we are using `_inputElement_value` to access the `Dynamic Text` value of th
 A calculator was promised, I know. We'll start building the calculator by creating an input for numbers.
 
 ```haskell
+[exampleDec|
 tutorial4 :: (DomBuilder t m, PostBuild t m) => m ()
 tutorial4 = el "div" $ do
   t <- inputElement $ def
     & inputElementConfig_initialValue .~ "0"
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
   dynText $ _inputElement_value t
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/4)
 
@@ -162,6 +173,7 @@ Next, we override the default initial value of the `InputElement`. We gave it `"
 Let's do more than just take the input value and print it out. First, let's make sure the input is actually a number:
 
 ```haskell
+[exampleDec|
 tutorial5 :: (DomBuilder t m, PostBuild t m) => m ()
 tutorial5 = el "div" $ do
   x <- numberInput
@@ -174,6 +186,7 @@ tutorial5 = el "div" $ do
         & inputElementConfig_initialValue .~ "0"
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/5)
 
@@ -185,6 +198,7 @@ Running the app at this point should produce an input and some text showing the 
 Now that we have `numberInput` we can put together a couple inputs to make a basic calculator.
 
 ```haskell
+[exampleDec|
 tutorial6 :: (DomBuilder t m, PostBuild t m) => m ()
 tutorial6 = el "div" $ do
   nx <- numberInput
@@ -201,6 +215,7 @@ tutorial6 = el "div" $ do
         & inputElementConfig_initialValue .~ "0"
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/6)
 
@@ -248,6 +263,7 @@ d <- dropdown Times (constDyn ops) def
 We are using `constDyn` again here to turn our `Map` of operations into a `Dynamic`. Using `def`, we provide the default `DropdownConfig`. The result, `d`, will be a `Dropdown`. We can retrieve the `Dynamic` selection of a `Dropdown` by using `_dropdown_value`.
 
 ```haskell
+[exampleDec|
 tutorial7 :: (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) => m ()
 tutorial7 = el "div" $ do
   nx <- numberInput
@@ -273,6 +289,7 @@ tutorial7 = el "div" $ do
                 Minus -> (-)
                 Times -> (*)
                 Divide -> (/)
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/7)
 
@@ -288,17 +305,20 @@ Running the app at this point will give us our two number inputs with a dropdown
 Let's spare a thought for the user of our calculator and add a little UI styling. Our number input currently looks like this:
 
 ```
+[exampleDec|
 numberInput :: MonadWidget t m => m (Dynamic t (Maybe Double))
 numberInput = do
   n <- inputElement $ def
     & inputElementConfig_initialValue .~ "0"
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
   return . fmap (readMaybe . unpack) $ _inputElement_value n
+|]
 ```
 
 Let's give it some html attributes to work with:
 
 ```
+[exampleDec|
 numberInput :: MonadWidget t m => m (Dynamic t (Maybe Double))
 numberInput = do
   let initAttrs = (("type" =: "number") <> ("style" =: "border-color: blue"))
@@ -306,6 +326,7 @@ numberInput = do
     & inputElementConfig_initialValue .~ "0"
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ initAttrs
   return . fmap (readMaybe . unpack) $ _inputElement_value n
+|]
 ```
 
 Here, we've used a `(Map Text Text)`. This `Map` represents the html attributes of our inputs.
@@ -315,6 +336,7 @@ Instead of just making the `InputElement` blue, let's change it's color based on
 
 ```
 ...
+[exampleDec|
 numberInput :: (MonadWidget t m) => m (Dynamic t (Maybe Double))
 numberInput = do
   let initAttrs = ("type" =: "number") <> (style False)
@@ -325,14 +347,20 @@ numberInput = do
         (Just _) -> fmap Just (style False)
         (Nothing) -> fmap Just (style True)
 
-  rec
+  -- The next line can be replaced with just 'rec' and RecursiveDo
+  (result, _) <- mfix $ \(~(result, modAttrEv)) -> do
+  -- rec
+
     n <- inputElement $ def
       & inputElementConfig_initialValue .~ "0"
       & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ initAttrs
       & inputElementConfig_elementConfig . elementConfig_modifyAttributes .~ modAttrEv
     let result = fmap (readMaybe . unpack) $ _inputElement_value n
         modAttrEv  = fmap styleChange (updated result)
+    -- This return statement is not necessary with RecursiveDo
+    return (result, modAttrEv)
   return result
+|]
 ```
 
 Note that we need to add a language pragma here to enable the `RecursiveDo` language extension.  Here `style` function takes a `Bool` value, whether input is correct or not, and it gives a `Map` of attributes with green or red color respectively.  The next function `styleChange` actually produces a `Map` which tells which attribute to change.  If the value of a key in the `Map` is a `Just` value then the attribute is either added or modified.  If the value of key is `Nothing`, then that attribute is removed.  An `Event` of this `Map` is specified in the `elementConfig_modifyAttributes`.
@@ -344,6 +372,7 @@ After we bind `result`, we use `fmap` again to apply a switching function to the
 The complete program now looks like this:
 
 ```haskell
+[exampleDec|
 tutorial8 :: (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) => m ()
 tutorial8 = el "div" $ do
   nx <- numberInput
@@ -364,13 +393,19 @@ tutorial8 = el "div" $ do
           styleChange result = case result of
             (Just _) -> fmap Just (style False)
             (Nothing) -> fmap Just (style True)
-      rec
+
+      -- The next line can be replaced with just 'rec' and RecursiveDo
+      (result, _) <- mfix $ \(~(result, modAttrEv)) -> do
+      -- rec
+
         n <- inputElement $ def
           & inputElementConfig_initialValue .~ "0"
           & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ initAttrs
           & inputElementConfig_elementConfig . elementConfig_modifyAttributes .~ modAttrEv
         let result = fmap (readMaybe . unpack) $ _inputElement_value n
             modAttrEv  = fmap styleChange (updated result)
+        -- This return statement is not necessary with RecursiveDo
+        return (result, modAttrEv)
       return result
     ops :: Map Op Text
     ops = Map.fromList [(Plus, "+"), (Minus, "-"), (Times, "*"), (Divide, "/")]
@@ -380,6 +415,7 @@ tutorial8 = el "div" $ do
                 Minus -> (-)
                 Times -> (*)
                 Divide -> (/)
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/8)
 

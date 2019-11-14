@@ -15,6 +15,9 @@ with pkgs.haskell.lib; {
   ios.bundleIdentifier = "systems.obsidian.obelisk.examples.minimal";
   ios.bundleName = "Obelisk Minimal Example";
   __closureCompilerOptimizationLevel = null;
+  packages = {
+    tutorial = ./tutorial;
+  };
   overrides = self: super: {
     temporary = dontCheck super.temporary;
     email-validate = dontCheck super.email-validate;
