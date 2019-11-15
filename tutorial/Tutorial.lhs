@@ -79,12 +79,12 @@ tutorial1 = el "div" $ text "Welcome to Reflex"
 `el` has the type signature:
 
 ```
-el :: MonadWidget t m => Text -> m a -> m a
+el :: DomBuilder t m => Text -> m a -> m a
 ```
 
 The first argument to `el` is a `Text`, which will become the tag of the html element produced. The second argument is a `Widget`, which will become the child of the element being produced. We turned on the `OverloadedStrings` extension so that the literal string in our source file would be interpreted as the appropriate type (`Text` rather than `String`).
 
-> #### Sidebar: Interpreting the MonadWidget type
+> #### Sidebar: Interpreting the DomBuilder type
 > FRP-enabled datatypes in Reflex take an argument `t`, which identifies the FRP subsystem being used.  This ensures that wires don't get crossed if a single program uses Reflex in multiple different contexts.  You can think of `t` as identifying a particular "timeline" of the FRP system.
 > Because most simple programs will only deal with a single timeline, we won't revisit the `t` parameters in this tutorial.  As long as you make sure your `Event`, `Behavior`, and `Dynamic` values all get their `t` argument, it'll work itself out.
 
@@ -93,7 +93,7 @@ In our example, `el "div" $ text "Welcome to Reflex"`, the first argument to `el
 The second argument to `el` was `text "Welcome to Reflex"`. The type signature of `text` is:
 
 ```
-text :: MonadWidget t m => Text -> m ()
+text :: DomBuilder t m => Text -> m ()
 ```
 
 `text` takes a `Text` and produces a `Widget`. The `Text` becomes a text DOM node in the parent element of the `text`. Of course, instead of a `Text`, we could have used `el` here as well to continue building arbitrarily complex DOM. For instance, if we wanted to make a unordered list:
@@ -235,7 +235,7 @@ We use `fmap` again to apply `pack . show` to `result` (a `Dynamic (Maybe Double
 Next, we'll add support for other operations. We're going to add a dropdown so that the user can select the operation to apply. The function `dropdown` has the type:
 
 ```
-dropdown :: (MonadWidget t m, Ord k) => k -> Dynamic t (Map k Text) -> DropdownConfig t k -> m (Dropdown t k)
+dropdown :: (DomBuilder t m, Ord k) => k -> Dynamic t (Map k Text) -> DropdownConfig t k -> m (Dropdown t k)
 ```
 
 The first argument is the initial value of the `Dropdown`. The second argument is a `Dynamic (Map k Text)` that represents the options in the dropdown. The `Text` values of the `Map` are the strings that will be displayed to the user. If the initial key is not in the `Map`, it is added and given a `Text` value of `""`. The final argument is a `DropdownConfig`.
@@ -304,10 +304,10 @@ Running the app at this point will give us our two number inputs with a dropdown
 ### Dynamic Element Attributes
 Let's spare a thought for the user of our calculator and add a little UI styling. Our number input currently looks like this:
 
-```
+```haskell
 [exampleDec|
-numberInput :: MonadWidget t m => m (Dynamic t (Maybe Double))
-numberInput = do
+numberInput_1 :: DomBuilder t m => m (Dynamic t (Maybe Double))
+numberInput_1 = do
   n <- inputElement $ def
     & inputElementConfig_initialValue .~ "0"
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
@@ -317,10 +317,10 @@ numberInput = do
 
 Let's give it some html attributes to work with:
 
-```
+```haskell
 [exampleDec|
-numberInput :: MonadWidget t m => m (Dynamic t (Maybe Double))
-numberInput = do
+numberInput_2 :: DomBuilder t m => m (Dynamic t (Maybe Double))
+numberInput_2 = do
   let initAttrs = (("type" =: "number") <> ("style" =: "border-color: blue"))
   n <- inputElement $ def
     & inputElementConfig_initialValue .~ "0"
@@ -334,10 +334,9 @@ Here, we've used a `(Map Text Text)`. This `Map` represents the html attributes 
 Static attributes are useful and quite common, but attributes will often need to change.
 Instead of just making the `InputElement` blue, let's change it's color based on whether the input successfully parses to a `Double`:
 
-```
-...
+```haskell
 [exampleDec|
-numberInput :: (MonadWidget t m) => m (Dynamic t (Maybe Double))
+numberInput :: (DomBuilder t m, MonadFix m) => m (Dynamic t (Maybe Double))
 numberInput = do
   let initAttrs = ("type" =: "number") <> (style False)
       color err = if err then "red" else "green"
@@ -384,29 +383,6 @@ tutorial8 = el "div" $ do
   text " = "
   dynText resultText
   where
-    numberInput :: (DomBuilder t m, MonadFix m) => m (Dynamic t (Maybe Double))
-    numberInput = do
-      let initAttrs = ("type" =: "number") <> (style False)
-          color err = if err then "red" else "green"
-          style err = "style" =: ("border-color: " <> color err)
-          styleChange :: Maybe Double -> Map AttributeName (Maybe Text)
-          styleChange result = case result of
-            (Just _) -> fmap Just (style False)
-            (Nothing) -> fmap Just (style True)
-
-      -- The next line can be replaced with just 'rec' and RecursiveDo
-      (result, _) <- mfix $ \(~(result, modAttrEv)) -> do
-      -- rec
-
-        n <- inputElement $ def
-          & inputElementConfig_initialValue .~ "0"
-          & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ initAttrs
-          & inputElementConfig_elementConfig . elementConfig_modifyAttributes .~ modAttrEv
-        let result = fmap (readMaybe . unpack) $ _inputElement_value n
-            modAttrEv  = fmap styleChange (updated result)
-        -- This return statement is not necessary with RecursiveDo
-        return (result, modAttrEv)
-      return result
     ops :: Map Op Text
     ops = Map.fromList [(Plus, "+"), (Minus, "-"), (Times, "*"), (Divide, "/")]
     runOp :: Fractional a => Op -> a -> a -> a
