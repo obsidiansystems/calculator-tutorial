@@ -6,8 +6,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module QQ
+module Tutorial.QQ
   ( exampleDec
+  , parseMode
+  , knownExtensions
   ) where
 
 import Data.Text (Text)
@@ -29,11 +31,11 @@ parseMode = Exts.defaultParseMode
       , Exts.infixr_ 4 ["%~", ".~", "?~", "<>~"]
       , Exts.infixl_ 1 ["&"]
       ]
-    , Exts.extensions = Exts.EnableExtension <$> exts
+    , Exts.extensions = Exts.EnableExtension <$> knownExtensions
     }
 
-exts :: [Exts.KnownExtension]
-exts =
+knownExtensions :: [Exts.KnownExtension]
+knownExtensions =
   [ Exts.DataKinds
   , Exts.ExistentialQuantification
   , Exts.ExplicitForAll

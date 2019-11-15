@@ -58,7 +58,7 @@ import Control.Applicative ((<*>), (<$>))
 import Control.Monad.Fix (MonadFix)
 
 import Control.Monad.Fix (mfix)
-import QQ
+import Tutorial.QQ
 
 ```
 

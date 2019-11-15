@@ -25,6 +25,6 @@ library
                , haskell-src-exts
                , template-haskell
   exposed-modules:
-    QQ
     Tutorial
+    Tutorial.QQ
   ghc-options: -Wall -pgmL markdown-unlit
