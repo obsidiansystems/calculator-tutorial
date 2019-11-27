@@ -45,6 +45,7 @@ Because this is one big source file, all of our functions will share a set of im
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Tutorial where
 
@@ -53,6 +54,7 @@ import Reflex.Dom
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text (pack, unpack, Text)
+import qualified Data.Text as T
 import Text.Read (readMaybe)
 import Control.Applicative ((<*>), (<$>))
 import Control.Monad.Fix (MonadFix)
@@ -151,17 +153,94 @@ data InputElement er d t
 
 Here we are using `_inputElement_value` to access the `Dynamic Text` value of the `InputElement`. Conveniently, `dynText` takes a `Dynamic Text` and displays it. It is the dynamic version of `text`.
 
-### A Number Input
+### A Number Pad
 A calculator was promised, I know. We'll start building the calculator by creating an input for numbers.
 
 ```haskell
+data Op = Plus | Minus | Times | Divide
+  deriving (Eq, Ord, Show)
+
+interp :: Op -> Double -> Double -> Double
+interp Plus = (+)
+interp Minus = (-)
+interp Times = (*)
+interp Divide = (/)
+
+data CalcState = CalcState
+  { _calcState_accum :: Double
+  , _calcState_op    :: Maybe Op
+  , _calcState_input :: Text
+  } deriving (Show)
+
+data Button
+  = ButtonNumber Text
+  | ButtonOp Op
+  | ButtonEq
+  | ButtonClear
+
 [exampleDec|
-tutorial4 :: (DomBuilder t m, PostBuild t m) => m ()
+tutorial4 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial4 = el "div" $ do
-  t <- inputElement $ def
-    & inputElementConfig_initialValue .~ "0"
-    & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
-  dynText $ _inputElement_value t
+  b0 <- ("0" <$) <$> button "0"
+  b1 <- ("1" <$) <$> button "1"
+  b2 <- ("2" <$) <$> button "2"
+  b3 <- ("3" <$) <$> button "3"
+  b4 <- ("4" <$) <$> button "4"
+  b5 <- ("5" <$) <$> button "5"
+  b6 <- ("6" <$) <$> button "6"
+  b7 <- ("7" <$) <$> button "7"
+  b8 <- ("8" <$) <$> button "8"
+  b9 <- ("9" <$) <$> button "9"
+  bp <- ("." <$) <$> button "."
+  let numButtons = leftmost [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, bp]
+  bPlus <- (Plus <$) <$> button "+"
+  bMinus <- (Minus <$) <$> button "-"
+  bTimes <- (Times <$) <$> button "*"
+  bDivide <- (Divide <$) <$> button "/"
+  let opButtons = leftmost [bPlus, bMinus, bTimes, bDivide]
+  bEq <- button "="
+  bClear <- button "C"
+  let buttons = leftmost
+        [ ButtonNumber <$> numButtons
+        , ButtonOp <$> opButtons
+        , ButtonEq <$ bEq
+        , ButtonClear <$ bClear
+        ]
+  d0 <- accumDyn collectButtonPresses initState buttons
+  dynText (debugDisplayState <$> d0)
+  el "br" blank
+  dynText (displayState <$> d0)
+ where
+  initState = CalcState 0 Nothing ""
+  collectButtonPresses state@(CalcState accum op input) = \case
+    ButtonNumber d ->
+      if d == "." && T.find (== '.') input /= Nothing
+      then state
+      else CalcState accum op (input <> d)
+    ButtonOp pushedOp ->
+      if T.null input
+      then CalcState accum (Just pushedOp) input
+      else apply state (Just pushedOp)   ---
+    ButtonEq ->
+      if T.null input
+      then state
+      else apply state Nothing
+    ButtonClear -> initState
+
+
+  apply state@(CalcState accum mOp input) pushedOp =
+    case readMaybe (unpack input) of
+      Nothing -> state   -- this shouldn't happen.
+      Just x -> case mOp of
+        Nothing -> CalcState x pushedOp ""
+        Just op -> CalcState (interp op accum x) pushedOp ""
+
+  displayState (CalcState accum _op input) =
+    if T.null input
+    then T.pack (show accum)
+    else input
+
+  debugDisplayState = T.pack . show
 |]
 ```
 [Go to snippet](http://localhost:8000/tutorial/4)
@@ -243,7 +322,7 @@ The first argument is the initial value of the `Dropdown`. The second argument i
 Our supported operations will be:
 
 ```haskell
-data Op = Plus | Minus | Times | Divide deriving (Eq, Ord)
+-- data Op = Plus | Minus | Times | Divide deriving (Eq, Ord)
 ```
 
 Note that because we can't put datastructure definitions in the `where` clause, this definition is going to be shared by all the functions in this module that use this type.
