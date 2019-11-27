@@ -44,7 +44,6 @@ Because this is one big source file, all of our functions will share a set of im
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE LambdaCase #-}
 
 module Tutorial where
 
@@ -384,7 +383,9 @@ tutorial8 = el "div" $ do
 
 The input border colors will now change depending on their value.
 
-### Number Pad
+### State Machines
+
+#### Number Pad
 
 ```haskell
 numberPad :: (DomBuilder t m) => m (Event t Text)
@@ -405,18 +406,25 @@ tutorial9 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial9 = el "div" $ do
   numberButton <- numberPad
   clearButton <- button "C"
-  let buttons = leftmost [ Nothing <$ clearButton , Just <$> numberButton ]
+  let buttons = leftmost
+        [ Nothing <$ clearButton
+        , Just <$> numberButton
+        ]
   dstate <- accumDyn collectButtonPresses initialState buttons
   dynText dstate
   where
+    initialState :: Text
     initialState = T.empty
-    collectButtonPresses state = \case
-      Nothing -> initialState
-      Just digit -> state <> digit
+
+    collectButtonPresses :: Text -> Maybe Text -> Text
+    collectButtonPresses state buttonPress =
+      case buttonPress of
+        Nothing -> initialState
+        Just digit -> state <> digit
 ```
 [Go to snippet](http://localhost:8000/tutorial/9)
 
-### Four Function Calculator
+#### Four Function Calculator
 
 ```haskell
 data CalcState = CalcState
@@ -454,34 +462,39 @@ tutorial10 = el "div" $ do
   el "br" blank
   dynText (displayState <$> d0)
   where
+    initState :: CalcState
     initState = CalcState 0 Nothing ""
-    collectButtonPresses state@(CalcState accum op input) = \case
-      ButtonNumber d ->
-        if d == "." && T.find (== '.') input /= Nothing
-        then state
-        else CalcState accum op (input <> d)
-      ButtonOp pushedOp ->
-        if T.null input
-        then CalcState accum (Just pushedOp) input
-        else apply state (Just pushedOp)
-      ButtonEq ->
-        if T.null input
-        then state
-        else apply state Nothing
-      ButtonClear -> initState
 
-    apply state@(CalcState accum mOp input) pushedOp =
-      case readMaybe (unpack input) of
-        Nothing -> state   -- this shouldn't happen.
-        Just x -> case mOp of
-          Nothing -> CalcState x pushedOp ""
-          Just op -> CalcState (runOp op accum x) pushedOp ""
+    collectButtonPresses :: CalcState -> Button -> CalcState
+    collectButtonPresses state@(CalcState accum op input) button =
+      case button of
+        ButtonNumber d ->
+          if d == "." && T.find (== '.') input /= Nothing
+          then state
+          else CalcState accum op (input <> d)
+        ButtonOp pushedOp -> apply state (Just pushedOp)
+        ButtonEq -> apply state Nothing
+        ButtonClear -> initState
 
+    apply :: CalcState -> Maybe Op -> CalcState
+    apply state@(CalcState accum mOp input) mOp' =
+      if T.null input
+      then
+        CalcState accum mOp' input
+      else
+        case readMaybe (unpack input) of
+          Nothing -> state    -- this shouldn't happen
+          Just x -> case mOp of
+            Nothing -> CalcState x mOp' ""
+            Just op -> CalcState (runOp op accum x) mOp' ""
+
+    displayState :: CalcState -> Text
     displayState (CalcState accum _op input) =
       if T.null input
       then T.pack (show accum)
       else input
 
+    debugDisplayState :: CalcState -> Text
     debugDisplayState = T.pack . show
 ```
 [Go to snippet](http://localhost:8000/tutorial/10)
