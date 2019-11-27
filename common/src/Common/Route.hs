@@ -38,6 +38,8 @@ data TutorialRoute :: * -> * where
   TutorialRoute_6 :: TutorialRoute ()
   TutorialRoute_7 :: TutorialRoute ()
   TutorialRoute_8 :: TutorialRoute ()
+  TutorialRoute_9 :: TutorialRoute ()
+  TutorialRoute_10 :: TutorialRoute ()
 
 data FrontendRoute :: * -> * where
   FrontendRoute_Main :: FrontendRoute ()
@@ -60,7 +62,10 @@ fullRouteEncoder = mkFullRouteEncoder
         TutorialRoute_5 -> PathSegment "5" $ unitEncoder mempty
         TutorialRoute_6 -> PathSegment "6" $ unitEncoder mempty
         TutorialRoute_7 -> PathSegment "7" $ unitEncoder mempty
-        TutorialRoute_8 -> PathSegment "8" $ unitEncoder mempty)
+        TutorialRoute_8 -> PathSegment "8" $ unitEncoder mempty
+        TutorialRoute_9 -> PathSegment "9" $ unitEncoder mempty
+        TutorialRoute_10 -> PathSegment "10" $ unitEncoder mempty
+  )
 
 concat <$> mapM deriveRouteComponent
   [ ''BackendRoute
