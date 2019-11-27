@@ -453,6 +453,7 @@ data Button
   | ButtonEq
   | ButtonClear
 
+[exampleDec|
 tutorial10 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial10 = el "div" $ do
   numberButtons <- numberPad
@@ -510,5 +511,6 @@ tutorial10 = el "div" $ do
 
     debugDisplayState :: CalcState -> Text
     debugDisplayState = T.pack . show
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/10)
