@@ -45,7 +45,6 @@ Because this is one big source file, all of our functions will share a set of im
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE LambdaCase #-}
 
 module Tutorial where
 
@@ -212,7 +211,7 @@ tutorial4 = el "div" $ do
   dynText (displayState <$> d0)
  where
   initState = CalcState 0 Nothing ""
-  collectButtonPresses state@(CalcState accum op input) = \case
+  collectButtonPresses state@(CalcState accum op input) buttonPress = case buttonPress of
     ButtonNumber d ->
       if d == "." && T.find (== '.') input /= Nothing
       then state
