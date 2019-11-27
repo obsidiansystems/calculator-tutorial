@@ -156,12 +156,14 @@ Here we are using `_inputElement_value` to access the `Dynamic Text` value of th
 A calculator was promised, I know. We'll start building the calculator by creating an input for numbers.
 
 ```haskell
+[exampleDec|
 tutorial4 :: (DomBuilder t m, PostBuild t m) => m ()
 tutorial4 = el "div" $ do
   t <- inputElement $ def
     & inputElementConfig_initialValue .~ "0"
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
   dynText $ _inputElement_value t
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/4)
 
@@ -412,6 +414,7 @@ numberPad = do
   b9 <- ("9" <$) <$> button "9"
   return $ leftmost [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9]
 
+[exampleDec|
 tutorial9 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial9 = el "div" $ do
   numberButton <- numberPad
@@ -431,6 +434,7 @@ tutorial9 = el "div" $ do
       case buttonPress of
         Nothing -> initialState
         Just digit -> state <> digit
+|]
 ```
 [Go to snippet](http://localhost:8000/tutorial/9)
 
