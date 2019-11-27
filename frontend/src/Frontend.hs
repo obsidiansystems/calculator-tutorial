@@ -83,4 +83,6 @@ frontend = Frontend
         TutorialRoute_6 -> tutorial6
         TutorialRoute_7 -> tutorial7
         TutorialRoute_8 -> tutorial8
+        TutorialRoute_9 -> tutorial9
+        TutorialRoute_10 -> tutorial10
   }
