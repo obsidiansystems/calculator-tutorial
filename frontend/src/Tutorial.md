@@ -55,7 +55,7 @@ import Data.Text (pack, unpack, Text)
 import qualified Data.Text as T
 import Text.Read (readMaybe)
 import Control.Applicative ((<*>), (<$>))
-import Control.Monad.Fix (MonadFix)
+import Control.Monad.Fix (MonadFix, mfix)
 
 ```
 
@@ -383,9 +383,20 @@ tutorial8 = el "div" $ do
 
 The input border colors will now change depending on their value.
 
-### State Machines
+### Events and State Machines
+
+Sometimes you will want to use events to update a state machine; implementing a more traditional four function calculator is a fairly natural example.  In the next two examples, we'll use `accumDyn` to collect button presses and use them to update a widget's state.   This function is a close analogy to `foldl`:  it takes a pure function describing the state changes,  an initial state, and a `Event` stream,  and returns a `Dynamic` behavior.
+
+```
+accumDyn :: (Reflex t, MonadHold t m, MonadFix m)
+         => (a -> b -> a) -> a -> Event t b -> m (Dynamic t a)
+```
+
+So, let's get started!
 
 #### Number Pad
+
+As a slimmed down example, we'll start with a number pad that allows you to type in numbers, and clear them.  We'll start with a numeric keypad:
 
 ```haskell
 numberPad :: (DomBuilder t m) => m (Event t Text)
@@ -401,7 +412,13 @@ numberPad = do
   b8 <- ("8" <$) <$> button "8"
   b9 <- ("9" <$) <$> button "9"
   return $ leftmost [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9]
+```
 
+This definition will come in handy for the more fully worked example.  So `tutorial9` starts by tacking on a button to clear the input, and then uses `accumDyn` to observe button presses and update our widget's state.  Our widget's state is very simple:  it's just `Text`.  The state transition function is also quite simple:  we simply check to see if the clear button was pressed,  and if not, append the Text returned by our `numberPad`.
+
+There are significant benefits to security, reliability, and testing if you can specify your widget's state transition as a pure function, which we do here.  It provides a high degree of assurance that the transition function does not have any effects that can have complicated interactions with other parts of the system.  However, if you need it, there is `accumMDyn` which allows the transition function to access certain other effects.
+
+```haskell
 tutorial9 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial9 = el "div" $ do
   numberButton <- numberPad
@@ -426,11 +443,15 @@ tutorial9 = el "div" $ do
 
 #### Four Function Calculator
 
+For a simple four-function calculator,  we basically just take the previous example and do a lot more of it.  Our widget's state becomes much more complex: in addition to the input,  we have an accumulator which we display when then the input is empty, and we keep track of the most recently requested operation.  Then we have to project the widget state down  `Dynamic` behaviors:  one to determine the `Text` representing the number to display on the screen,  and some ynamic attributes to indicate the selected operation.   While the state transition function is significantly more complicated, it's still a pure function:  as far as Reflex is concerned, it's really no different than the previous implementation.
+
+A more significant difference from Reflex's perspective is that `tutorial9` displayed the application state directly:  as the state was already `Text`, we could pass it directly to `dynText`.   However,  this time the application state is of type `CalcState`,  so we want to project `CalcState` to a `Text`, which we do inside of `displayState`.   In order to apply `displayState` to the result of `accumDyn`,  we use `Dynamic`'s instance of `Functor` via `<$>`.
+
 ```haskell
 data CalcState = CalcState
-  { _calcState_accum :: Double
-  , _calcState_op    :: Maybe Op
-  , _calcState_input :: Text
+  { _calcState_acc   :: Double     -- accumulator
+  , _calcState_op    :: Maybe Op   -- most recently requested operation
+  , _calcState_input :: Text       -- current input
   } deriving (Show)
 
 data Button
@@ -439,59 +460,72 @@ data Button
   | ButtonEq
   | ButtonClear
 
+opButton :: (DomBuilder t m, PostBuild t m) => Op -> Text -> Dynamic t (Maybe Op) -> m (Event t Op)
+opButton op label selectedOp = do
+  (e, _) <- elDynAttr' "button" (pickColor <$> selectedOp) $ text label
+  return (op <$ domEvent Click e)
+  where
+    pickColor mOp =
+      if Just op == mOp
+      then "style" =: "color: green"
+      else Map.empty
+
 tutorial10 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial10 = el "div" $ do
-  numberButtons <- numberPad
-  bPeriod <- ("." <$) <$> button "."
-  bPlus <- (Plus <$) <$> button "+"
-  bMinus <- (Minus <$) <$> button "-"
-  bTimes <- (Times <$) <$> button "*"
-  bDivide <- (Divide <$) <$> button "/"
-  let opButtons = leftmost [bPlus, bMinus, bTimes, bDivide]
-  bEq <- button "="
-  bClear <- button "C"
-  let buttons = leftmost
-        [ ButtonNumber <$> numberButtons
-        , ButtonNumber <$> bPeriod
-        , ButtonOp <$> opButtons
-        , ButtonEq <$ bEq
-        , ButtonClear <$ bClear
-        ]
-  d0 <- accumDyn collectButtonPresses initState buttons
-  dynText (debugDisplayState <$> d0)
-  el "br" blank
-  dynText (displayState <$> d0)
+  mfix $ \selectedOp -> do
+    numberButtons <- numberPad
+    bPeriod <- ("." <$) <$> button "."
+    bPlus <- opButton Plus "+" selectedOp
+    bMinus <- opButton Minus "-" selectedOp
+    bTimes <- opButton Times "*" selectedOp
+    bDivide <- opButton Divide "/" selectedOp
+    let opButtons = leftmost [bPlus, bMinus, bTimes, bDivide]
+    bEq <- button "="
+    bClear <- button "C"
+    let buttons = leftmost
+          [ ButtonNumber <$> numberButtons
+          , ButtonNumber <$> bPeriod
+          , ButtonOp <$> opButtons
+          , ButtonEq <$ bEq
+          , ButtonClear <$ bClear
+          ]
+    d0 <- accumDyn collectButtonPresses initState buttons
+    dynText (debugDisplayState <$> d0)
+    el "br" blank
+    dynText (displayState <$> d0)
+    return (_calcState_op <$> d0)
+  return ()
   where
     initState :: CalcState
     initState = CalcState 0 Nothing ""
 
     collectButtonPresses :: CalcState -> Button -> CalcState
-    collectButtonPresses state@(CalcState accum op input) button =
+    collectButtonPresses state@(CalcState acc op input) button =
       case button of
         ButtonNumber d ->
           if d == "." && T.find (== '.') input /= Nothing
           then state
-          else CalcState accum op (input <> d)
+          else CalcState acc op (input <> d)
         ButtonOp pushedOp -> apply state (Just pushedOp)
         ButtonEq -> apply state Nothing
         ButtonClear -> initState
 
     apply :: CalcState -> Maybe Op -> CalcState
-    apply state@(CalcState accum mOp input) mOp' =
+    apply state@(CalcState acc mOp input) mOp' =
       if T.null input
       then
-        CalcState accum mOp' input
+        CalcState acc mOp' input
       else
         case readMaybe (unpack input) of
           Nothing -> state    -- this shouldn't happen
           Just x -> case mOp of
             Nothing -> CalcState x mOp' ""
-            Just op -> CalcState (runOp op accum x) mOp' ""
+            Just op -> CalcState (runOp op acc x) mOp' ""
 
     displayState :: CalcState -> Text
-    displayState (CalcState accum _op input) =
+    displayState (CalcState acc _op input) =
       if T.null input
-      then T.pack (show accum)
+      then T.pack (show acc)
       else input
 
     debugDisplayState :: CalcState -> Text
