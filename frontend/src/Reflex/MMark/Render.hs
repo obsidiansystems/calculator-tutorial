@@ -15,6 +15,8 @@
 
 module Reflex.MMark.Render
   ( renderReflex
+  , defaultBlockRender
+  , defaultInlineRender
   ) where
 
 import Control.Arrow
