@@ -536,3 +536,22 @@ tutorial11 = divClass "calculator" $ do
           else Map.empty
 ```
 [Go to snippet](http://localhost:8000/tutorial/11)
+
+
+### In Summary
+
+Congratulations! You’ve written a simple functional reactive calculator with Reflex!
+
+We hope that you now feel confident in your understanding of Reflex, and are ready to begin working on your own project.
+
+If you have additional time or just want to continue practicing your new Reflex skills, here are some ideas for improvements that you could make to the calculator:
+
+1. Implement the `+/-` and `%` buttons.
+
+2. Implement "repeat the last operation" when the `=` button is repeatedly pushed.
+
+3. Turn this app into a naive iOS or Android application.
+
+Again, nice work on making it to the end of this tutorial, if you have any additional questions, check out our resources page.
+
+Happy Coding!
