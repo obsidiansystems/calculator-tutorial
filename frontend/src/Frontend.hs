@@ -65,6 +65,7 @@ frontend = Frontend
     mapM_ (\x -> elAttr "link" ("rel" =: "stylesheet" <> "href" =: x) blank)
       [ static @"bootstrap.min.css"
       , static @"highlight/styles/sunburst.css"
+      , static @"calculator/style.css"
       ]
     elAttr "script" ("src" =: static @"highlight/highlight.pack.js") blank
   , _frontend_body = subRoute_ $ \case
@@ -93,4 +94,5 @@ frontend = Frontend
         TutorialRoute_8 -> tutorial8
         TutorialRoute_9 -> tutorial9
         TutorialRoute_10 -> tutorial10
+        TutorialRoute_11 -> tutorial11
   }
