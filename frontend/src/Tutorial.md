@@ -317,7 +317,7 @@ numberPad = do
   b1 <- ("1" <$) <$> numberButton "1"
   b2 <- ("2" <$) <$> numberButton "2"
   b3 <- ("3" <$) <$> numberButton "3"
-  b0 <- ("0" <$) <$> numberButton "0"
+  b0 <- ("0" <$) <$> divClass "number zero" (button "0")
   return $ leftmost [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9]
   where
     numberButton n = divClass "number" $ button n
