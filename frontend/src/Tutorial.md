@@ -350,7 +350,7 @@ tutorial8 = el "div" $ do
 
 ### A Minimal Four Function Calculator
 
-For a simple four-function calculator,  we basically just take the previous example and do a lot more of it.  Our widget's state becomes much more complex: in addition to the input,  we have an accumulator which we display when then the input is empty, and we keep track of the most recently requested operation.  Then we have to project the widget state down  `Dynamic` behaviors:  one to determine the `Text` representing the number to display on the screen,  and some ynamic attributes to indicate the selected operation.   While the state transition function is significantly more complicated, it's still a pure function:  as far as Reflex is concerned, it's really no different than the previous implementation.
+For a simple four-function calculator,  we basically just take the previous example and do a lot more of it.  Our widget's state becomes much more complex: in addition to the input,  we have an accumulator which we display when then the input is empty, and we keep track of the most recently requested operation.  Then we have to project the widget state down  `Dynamic` behaviors:  one to determine the `Text` representing the number to display on the screen,  and some dynamic attributes to indicate the selected operation.   While the state transition function is significantly more complicated, it's still a pure function:  as far as Reflex is concerned, it's really no different than the previous implementation.
 
 ```haskell
 data CalcState = CalcState
