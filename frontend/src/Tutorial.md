@@ -323,9 +323,21 @@ numberPad = do
     numberButton n = divClass "number" $ button n
 ```
 
-This definition will come in handy for the more fully worked example.  So `tutorial9` starts by tacking on a button to clear the input, and then uses `accumDyn` to observe button presses and update our widget's state.  Our widget's state is very simple:  it's just `Text`.  The state transition function is also quite simple:  we simply check to see if the clear button was pressed,  and if not, append the Text returned by our `numberPad`.
+This definition will come in handy for the rest of the tutorial examples. Here, `button` is a reflex-dom default widget,  which isn't affected by the surrounding `divClass`:
 
-There are significant potential benefits to testing, reliability and security if you can specify your widget's state transition as a pure function, which we do here.  It provides a high degree of assurance that the transition function does not have complicated interactions with other parts of the system,  and makes it easier to check that part of the logic using say, quickcheck, an SMT solver, model checker, proof assistant, or other formal techniques.  However, if you need it, there is `accumMDyn` which allows the transition function to exhibit certain other effects.
+```
+button :: DomBuilder t m => Text -> m (Event t ())
+```
+
+For each button click, the event simply returns `()`.  However, we want to easily distinguish the buttons from each other, so we turn the result into an `m (Event t Text)` using two layers of fmap.  So, in the `b0` line, we use `<$>` to apply `("0" <$)` to the `Event` inside `m`,  then `<$` replaces the `()` inside the `Event` with `"0"`.
+
+Finally we funnel all these (now distinct) events into one `Event` channel, using `leftmost`,  which is of type:
+
+```
+leftmost :: Reflex t => [Event t a] -> Event t a
+```
+
+Here's the complete code:
 
 ```haskell
 tutorial8 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
@@ -349,6 +361,13 @@ tutorial8 = el "div" $ do
         Just digit -> state <> digit
 ```
 [Go to snippet](http://localhost:8000/tutorial/8)
+
+
+So `tutorial8` starts by tacking on a button to clear the input.   We then aggregate the events coming from the numberpad with the events coming from the clear button, by marking all the numberpad events with a `Just` constructor and using `Nothing` to represent the clear button.
+
+We use `accumDyn` to observe button presses and update our widget's state.  Our widget's state is very simple:  it's just `Text`.  The state transition function is also quite simple:  we simply check to see if the clear button was pressed,  and if not, append the Text returned by our `numberPad`.
+
+There are significant potential benefits to testing, reliability and security if you can specify your widget's state transition as a pure function, which we do here.  It provides a high degree of assurance that the transition function does not have complicated interactions with other parts of the system,  and makes it easier to check that part of the logic using say, quickcheck, an SMT solver, model checker, proof assistant, or other formal techniques.  However, if you need it, there is `accumMDyn` which allows the transition function to exhibit certain other effects.
 
 ### A Minimal Four Function Calculator
 
@@ -392,9 +411,15 @@ updateCalcState state@(CalcState accum op input) btn =
           Just x -> case mOp of
             Nothing -> CalcState x mOp' ""
             Just op -> CalcState (runOp op accum x) mOp' ""
+
+displayCalcState :: CalcState -> Text
+displayCalcState (CalcState accum _op input) =
+  if T.null input
+  then T.pack (show accum)
+  else input
 ```
 
-A more significant difference from Reflex's perspective is that the number pad displayed the application state directly:  as the state was already `Text`, we could pass it directly to `dynText`.   However,  this time the application state is of type `CalcState`,  so we want to project `CalcState` to a `Text`, which we do inside of `displayState`.   In order to apply `displayState` to the result of `accumDyn`,  we use `Dynamic`'s instance of `Functor` via `<$>`.
+A more significant difference from Reflex's perspective is that the number pad displayed the application state directly:  as the state was already `Text`, we could pass it directly to `dynText`.   However,  this time the application state is of type `CalcState`.    We use `displayCalcState` to determine what text should be displayed;  we either display the current input,  or the accumulator if we have no input.  In order to apply `displayCalcState` to the result of `accumDyn`,  we use `Dynamic`'s instance of `Functor` via `<$>`.
 
 ```haskell
 tutorial9 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
@@ -415,25 +440,14 @@ tutorial9 = el "div" $ do
         , ButtonEq <$ bEq
         , ButtonClear <$ bClear
         ]
-  d0 <- accumDyn updateCalcState initCalcState buttons
-  dynText (debugDisplayState <$> d0)
-  el "br" blank
-  dynText (displayState <$> d0)
-  where
-    displayState :: CalcState -> Text
-    displayState (CalcState accum _op input) =
-      if T.null input
-      then T.pack (show accum)
-      else input
-
-    debugDisplayState :: CalcState -> Text
-    debugDisplayState = T.pack . show
+  calcState <- accumDyn updateCalcState initCalcState buttons
+  dynText (displayCalcState <$> calcState)
 ```
 [Go to snippet](http://localhost:8000/tutorial/9)
 
 ### Dynamic Attributes and Cyclic Dependencies
 
-For our final example,  we will go beyond the limitations of a traditional four-function calculator,  whose feedback was usually limited to a single-row 7-segment display.   We will indicate the selected operation by dynamically changing the background color of the button,  and deal with cyclic dependencies using the recursive do notation.
+For our final example,  we will go beyond the limitations of a traditional four-function calculator,  whose feedback was usually limited to a single-row 7-segment display.   We will indicate the selected operation by dynamically changing the background color of the button,  and deal with cyclic dependencies using the recursive do notation.  Instead of collapsing the accumulator and input registers, we'll simply display them both,  as if we had a 2-line 7 segment display.  And in doing so, the widget's entire state is visually presented to the user; nothing is hidden.
 
 Note, by using recursive do notation, we can reorder the declarations in any way that we see fit,  thus demonstrating that it's a mistake of assigning an imperative meaning to a Reflex program:  rather, reflex is declaratively specifying relationships between dynamic behaviors.
 
@@ -480,7 +494,7 @@ tutorial10 = el "div" $ do
 tutorial11 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial11 = divClass "calculator" $ do
   rec
-    divClass "output" $ dynText $ displayState <$> calcState
+    divClass "output" $ dynText $ displayCalcState <$> calcState
     buttons <- divClass "input" $ do
       (numberButtons, bPeriod) <- divClass "number-pad" $ do
         numberButtons <- numberPad
@@ -511,11 +525,6 @@ tutorial11 = divClass "calculator" $ do
     calcState <- accumDyn updateCalcState initCalcState buttons
   return ()
   where
-    displayState :: CalcState -> Text
-    displayState (CalcState accum _op input) =
-      if T.null input
-      then T.pack (show accum)
-      else input
     opButton :: (DomBuilder t m, PostBuild t m) => Op -> Text -> Dynamic t (Maybe Op) -> m (Event t Op)
     opButton op label selectedOp = do
       (e, _) <- divClass "primary" $ elDynAttr' "button" (pickColor <$> selectedOp) $ text label
