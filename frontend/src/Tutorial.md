@@ -496,6 +496,9 @@ tutorial10 = el "div" $ do
 ```
 [Go to snippet](http://localhost:8000/tutorial/10)
 
+
+For the final example,  we'll add some extra HTML `div`s and add `class` attributes to a variety of tags in order to make styling the output easier:
+
 ```haskell
 tutorial11 :: forall t m. (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial11 = divClass "calculator" $ do
@@ -538,7 +541,7 @@ tutorial11 = divClass "calculator" $ do
       where
         pickColor mOp =
           if Just op == mOp
-          then "style" =: "color: red"
+          then "style" =: "background: lightblue"
           else Map.empty
 ```
 [Go to snippet](http://localhost:8000/tutorial/11)
