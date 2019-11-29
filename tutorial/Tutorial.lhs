@@ -470,7 +470,7 @@ opButton op label selectedOp = do
 [exampleDec|
 tutorial10 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial10 = el "div" $ do
-  rec
+  _ <- mfix $ \calcState -> do
     numberButtons <- numberPad
     bPeriod <- ("." <$) <$> button "."
     let opState = _calcState_op <$> calcState
@@ -488,10 +488,10 @@ tutorial10 = el "div" $ do
           , ButtonEq <$ bEq
           , ButtonClear <$ bClear
           ]
-    calcState <- accumDyn updateCalcState initCalcState buttons
     dynText (T.pack . show . _calcState_acc <$> calcState)
     el "br" blank
     dynText (_calcState_input <$> calcState)
+    accumDyn updateCalcState initCalcState buttons
   return ()
 |]
 ```
