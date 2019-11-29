@@ -75,7 +75,7 @@ frontend = Frontend
         prerender_ blank $ do
           doc <- askDocument
           liftJSM $ forkJSM $ do
-            getElementsByTagName doc ("pre" :: Text)
+            _ <- getElementsByTagName doc ("pre" :: Text)
             void $ eval @Text "hljs.initHighlighting();"
       FrontendRoute_Tutorial -> subRoute_ $ \case
         TutorialRoute_1 -> tutorial1

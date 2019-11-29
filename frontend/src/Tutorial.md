@@ -44,6 +44,7 @@ Because this is one big source file, all of our functions will share a set of im
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Tutorial where
 
@@ -306,6 +307,11 @@ So, let's get started!
 As a slimmed down example, we'll start with a number pad that allows you to type in numbers, and clear them.  We'll start with a numeric keypad:
 
 ```haskell
+buttonClass :: DomBuilder t m => Text -> Text -> m (Event t ())
+buttonClass c s = do
+  (e, _) <- elAttr' "button" ("type" =: "button" <> "class" =: c) $ text s
+  return $ domEvent Click e
+
 numberPad :: (DomBuilder t m) => m (Event t Text)
 numberPad = do
   b7 <- ("7" <$) <$> numberButton "7"
@@ -317,10 +323,10 @@ numberPad = do
   b1 <- ("1" <$) <$> numberButton "1"
   b2 <- ("2" <$) <$> numberButton "2"
   b3 <- ("3" <$) <$> numberButton "3"
-  b0 <- ("0" <$) <$> divClass "number zero" (button "0")
+  b0 <- ("0" <$) <$> buttonClass "number zero" "0"
   return $ leftmost [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9]
   where
-    numberButton n = divClass "number" $ button n
+    numberButton n = buttonClass "number" n
 ```
 
 This definition will come in handy for the more fully worked example.  So `tutorial9` starts by tacking on a button to clear the input, and then uses `accumDyn` to observe button presses and update our widget's state.  Our widget's state is very simple:  it's just `Text`.  The state transition function is also quite simple:  we simply check to see if the clear button was pressed,  and if not, append the Text returned by our `numberPad`.
@@ -438,7 +444,7 @@ For our final example,  we will go beyond the limitations of a traditional four-
 Note, by using recursive do notation, we can reorder the declarations in any way that we see fit,  thus demonstrating that it's a mistake of assigning an imperative meaning to a Reflex program:  rather, reflex is declaratively specifying relationships between dynamic behaviors.
 
 ```haskell
-tutorial10 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
+tutorial10 :: forall t m. (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial10 = el "div" $ do
   rec
     numberButtons <- numberPad
@@ -464,7 +470,7 @@ tutorial10 = el "div" $ do
     dynText (_calcState_input <$> calcState)
   return ()
   where
-    opButton :: (DomBuilder t m, PostBuild t m) => Op -> Text -> Dynamic t (Maybe Op) -> m (Event t Op)
+    opButton :: Op -> Text -> Dynamic t (Maybe Op) -> m (Event t Op)
     opButton op label selectedOp = do
       (e, _) <- elDynAttr' "button" (pickColor <$> selectedOp) $ text label
       return (op <$ domEvent Click e)
@@ -477,14 +483,14 @@ tutorial10 = el "div" $ do
 [Go to snippet](http://localhost:8000/tutorial/10)
 
 ```haskell
-tutorial11 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
+tutorial11 :: forall t m. (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
 tutorial11 = divClass "calculator" $ do
   rec
     divClass "output" $ dynText $ displayState <$> calcState
     buttons <- divClass "input" $ do
       (numberButtons, bPeriod) <- divClass "number-pad" $ do
         numberButtons <- numberPad
-        bPeriod <- ("." <$) <$> divClass "number" (button ".")
+        bPeriod <- ("." <$) <$> buttonClass "number" "."
         return (numberButtons, bPeriod)
       (opButtons, bEq) <- divClass "ops-pad" $ do
         let opState = _calcState_op <$> calcState
@@ -493,12 +499,12 @@ tutorial11 = divClass "calculator" $ do
         bTimes <- opButton Times "*" opState
         bDivide <- opButton Divide "/" opState
         let opButtons = leftmost [bPlus, bMinus, bTimes, bDivide]
-        bEq <- divClass "primary" $ button "="
+        bEq <- buttonClass "primary" "="
         return (opButtons, bEq)
       bClear <- divClass "other-pad" $ do
-        bClear <- divClass "secondary" $ button "C"
-        _ <- divClass "secondary" $ button "+/-"
-        _ <- divClass "secondary" $ button "%"
+        bClear <- buttonClass "secondary" "C"
+        _ <- buttonClass "secondary" "+/-"
+        _ <- buttonClass "secondary" "%"
         return bClear
       let buttons = leftmost
             [ ButtonNumber <$> numberButtons
@@ -516,9 +522,9 @@ tutorial11 = divClass "calculator" $ do
       if T.null input
       then T.pack (show accum)
       else input
-    opButton :: (DomBuilder t m, PostBuild t m) => Op -> Text -> Dynamic t (Maybe Op) -> m (Event t Op)
+    opButton :: Op -> Text -> Dynamic t (Maybe Op) -> m (Event t Op)
     opButton op label selectedOp = do
-      (e, _) <- divClass "primary" $ elDynAttr' "button" (pickColor <$> selectedOp) $ text label
+      (e, _) <- elDynAttr' "button" (("class" =: "primary" <>) <$> (pickColor <$> selectedOp)) $ text label
       return (op <$ domEvent Click e)
       where
         pickColor mOp =
