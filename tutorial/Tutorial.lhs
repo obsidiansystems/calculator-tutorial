@@ -233,54 +233,36 @@ In our case, `zipDynWith` is combining the results of our two `numberInput`s (wi
 We use `fmap` again to apply `pack . show` to `result` (a `Dynamic (Maybe Double)`) resulting in a `Dynamic Text`. This `resultText` is then displayed using `dynText`.
 
 ### Supporting Multiple Operations
-Next, we'll add support for other operations. We're going to add a dropdown so that the user can select the operation to apply. The function `dropdown` has the type:
-
-```
-dropdown :: (DomBuilder t m, Ord k) => k -> Dynamic t (Map k Text) -> DropdownConfig t k -> m (Dropdown t k)
-```
-
-The first argument is the initial value of the `Dropdown`. The second argument is a `Dynamic (Map k Text)` that represents the options in the dropdown. The `Text` values of the `Map` are the strings that will be displayed to the user. If the initial key is not in the `Map`, it is added and given a `Text` value of `""`. The final argument is a `DropdownConfig`.
-
-Our supported operations will be:
+Next, we'll add support for other operations. We're going to add a dropdown so that the user can select the operation to apply.  Our supported operations will be:
 
 ```haskell
 data Op = Plus | Minus | Times | Divide
   deriving (Eq, Ord, Show)
 
 runOp :: Fractional a => Op -> a -> a -> a
-runOp s =
-  case s of
-    Plus -> (+)
-    Minus -> (-)
-    Times -> (*)
-    Divide -> (/)
-```
+runOp s = case s of
+  Plus -> (+)
+  Minus -> (-)
+  Times -> (*)
+  Divide -> (/)
 
-Note that because we can't put datastructure definitions in the `where` clause, this definition is going to be shared by all the functions in this module that use this type.
-
-We'll want some kind of string representation of each operation to display:
-
-```
+ops :: Map Op Text
 ops = Map.fromList [(Plus, "+"), (Minus, "-"), (Times, "*"), (Divide, "/")]
 ```
 
-We'll use this as an argument to `dropdown`:
+We also want a nice simple way of interpreting these operations,  and some kind of string representation to display.  We will reuse all of these definitions in all of the remaining examples.
 
-```
-d <- dropdown Times (constDyn ops) def
-```
-
-We are using `constDyn` again here to turn our `Map` of operations into a `Dynamic`. Using `def`, we provide the default `DropdownConfig`. The result, `d`, will be a `Dropdown`. We can retrieve the `Dynamic` selection of a `Dropdown` by using `_dropdown_value`.
+Here is our program:
 
 ```haskell
 [exampleDec|
 tutorial7 :: (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) => m ()
 tutorial7 = el "div" $ do
   nx <- numberInput
-  d <- dropdown Times (constDyn ops) def
+  op <- _dropdown_value <$> dropdown Times (constDyn ops) def
   ny <- numberInput
   let values = zipDynWith (,) nx ny
-      result = zipDynWith (\o (x,y) -> runOp o <$> x <*> y) (_dropdown_value d) values
+      result = zipDynWith (\o (x,y) -> runOp o <$> x <*> y) op values
       resultText = fmap (pack . show) result
   text " = "
   dynText resultText
@@ -291,113 +273,54 @@ tutorial7 = el "div" $ do
         & inputElementConfig_initialValue .~ "0"
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
-    ops :: Map Op Text
-    ops = Map.fromList [(Plus, "+"), (Minus, "-"), (Times, "*"), (Divide, "/")]
 |]
 ```
 [Go to snippet](http://localhost:8000/tutorial/7)
 
-This is our complete program. We've added an uninteresting function `runOp` that takes an `Op` and returns an operation. The keys of the `Map` we used to create the `Dropdown` had the type `Op`. When we retrieve the value of `Dropdown`, we'll use `runOp` to turn the `Dropdown` selection into the function we need to apply to our numbers.
+We've covered `numberInput` in our last tutorial; the first new function is `dropdown`, which has type:
 
-After creating the two `numberInput`s, we combine them using `zipDynWith` applying `(,)`, making a tuple of type `Dynamic (Maybe Double, Maybe Double)` and binding it to `values`.
+```
+dropdown :: (MonadWidget t m, Ord k) => k -> Dynamic t (Map k Text) -> DropdownConfig t k -> m (Dropdown t k)
+```
 
-Next, we call `zipDynWith` again, combining the `_dropdown_value` and `values`. Now, instead of applying `(+)` to our `Double` values, we use `runOp` to select an operation based on the `Dynamic` value of our `Dropdown`.
+The first argument is the initial value of the `Dropdown`,  which in our case is of type `Op`. The second argument is a `Dynamic (Map Op Text)` that represents the options in the dropdown. The `Text` values of the `Map` are the strings that will be displayed to the user. If the initial key is not in the `Map`, it is added and given a `Text` value of `""`. The final argument is a `DropdownConfig`.We are using `dropdown` on the following line:
+
+```
+op <- _dropdown_value <$> dropdown Times (constDyn ops) def
+```
+
+This particular `reflex-dom` widget allows us to dynamically update the list of options.  We don't need this,  so we use `constDyn` to turn `ops` into a dynamic behavior that never changes.  Finally, we use `def` to provide a sensible default configuration.   In our case, the return type of `dropdown` in our case is `m (Dropdown t Op)`,  and we use the accessor `_dropdown_value` to fetch the `Dynamic t Op` that represents the operation currently held in the input box.
+
+Our use of `zipDynWith` is very similar to the last tutorial;  but instead of aggregating two `Dynamic`s, now we need to aggregate three.  So we call `zipDynWith` twice.
+
+```
+let values = zipDynWith (,) nx ny
+    result = zipDynWith (\o (x,y) -> runOp o <$> x <*> y) op values
+```
+
+The first call,  we aggregate the state of the two `numberInputs`, `nx` and `ny`, into a pair of numbers.  The result is of type `Dynamic t (Maybe Double, Maybe Double)`, which is then bound to `values`.
+
+
+Next, we call `zipDynWith` again, combining `values` with the selected operation `op`. Now, instead of applying `(+)` to our `Double` values, we use `runOp` to select an operation based on the `Dynamic` value of our `Dropdown`.
 
 Running the app at this point will give us our two number inputs with a dropdown of operations sandwiched between them. Multiplication should be pre-selected when the page loads.
 
-### Dynamic Element Attributes
-Let's spare a thought for the user of our calculator and add a little UI styling. Our number input currently looks like this:
+### Events and State Machines
 
-```haskell
-[exampleDec|
-numberInput_1 :: DomBuilder t m => m (Dynamic t (Maybe Double))
-numberInput_1 = do
-  n <- inputElement $ def
-    & inputElementConfig_initialValue .~ "0"
-    & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
-  return . fmap (readMaybe . unpack) $ _inputElement_value n
-|]
+While the previous examples are a nice introduction to producing spreadsheet-style interactions,  sometimes you'll want to use events to update a state machine;  a reasonably faithful implementation of a traditional four function calculator is a fairly natural example.
+
+In the next three examples, we'll use `accumDyn` to collect button presses and use them to update a widget's state.   This function is a close analogy to `foldl`:  it takes a pure function describing the state changes,  an initial state, and a `Event` stream,  and returns a `Dynamic` behavior.
+
+```
+accumDyn :: (Reflex t, MonadHold t m, MonadFix m)
+         => (a -> b -> a) -> a -> Event t b -> m (Dynamic t a)
 ```
 
-Let's give it some html attributes to work with:
+So, let's get started!
 
-```haskell
-[exampleDec|
-numberInput_2 :: DomBuilder t m => m (Dynamic t (Maybe Double))
-numberInput_2 = do
-  let initAttrs = (("type" =: "number") <> ("style" =: "border-color: blue"))
-  n <- inputElement $ def
-    & inputElementConfig_initialValue .~ "0"
-    & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ initAttrs
-  return . fmap (readMaybe . unpack) $ _inputElement_value n
-|]
-```
+### Number Pad
 
-Here, we've used a `(Map Text Text)`. This `Map` represents the html attributes of our inputs.
-
-Static attributes are useful and quite common, but attributes will often need to change.
-Instead of just making the `InputElement` blue, let's change it's color based on whether the input successfully parses to a `Double`:
-
-```haskell
-[exampleDec|
-numberInput :: (DomBuilder t m, MonadFix m) => m (Dynamic t (Maybe Double))
-numberInput = do
-  let initAttrs = ("type" =: "number") <> (style False)
-      color err = if err then "red" else "green"
-      style err = "style" =: ("border-color: " <> color err)
-      styleChange :: Maybe Double -> Map AttributeName (Maybe Text)
-      styleChange result = case result of
-        (Just _) -> fmap Just (style False)
-        (Nothing) -> fmap Just (style True)
-
-  -- The next line can be replaced with just 'rec' and RecursiveDo
-  (result, _) <- mfix $ \(~(result, modAttrEv)) -> do
-  -- rec
-
-    n <- inputElement $ def
-      & inputElementConfig_initialValue .~ "0"
-      & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ initAttrs
-      & inputElementConfig_elementConfig . elementConfig_modifyAttributes .~ modAttrEv
-    let result = fmap (readMaybe . unpack) $ _inputElement_value n
-        modAttrEv  = fmap styleChange (updated result)
-    -- This return statement is not necessary with RecursiveDo
-    return (result, modAttrEv)
-  return result
-|]
-```
-
-Note that we need to add a language pragma here to enable the `RecursiveDo` language extension.  Here `style` function takes a `Bool` value, whether input is correct or not, and it gives a `Map` of attributes with green or red color respectively.  The next function `styleChange` actually produces a `Map` which tells which attribute to change.  If the value of a key in the `Map` is a `Just` value then the attribute is either added or modified.  If the value of key is `Nothing`, then that attribute is removed.  An `Event` of this `Map` is specified in the `elementConfig_modifyAttributes`.
-
-In the first line of the `rec`, we have supplied this `Event` as argument `modAttrEv`. The `Dynamic` value of the input is bound to `result`. The code for parsing this value has not changed.
-
-After we bind `result`, we use `fmap` again to apply a switching function to the `updated result` `Event`. The switching function checks whether the value was successfully parsed and gives the corresponding `Event` to modify the attributes.
-
-The complete program now looks like this:
-
-```haskell
-[exampleDec|
-tutorial8 :: (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) => m ()
-tutorial8 = el "div" $ do
-  nx <- numberInput
-  d <- dropdown Times (constDyn ops) def
-  ny <- numberInput
-  let values = zipDynWith (,) nx ny
-      result = zipDynWith (\o (x,y) -> runOp o <$> x <*> y) (_dropdown_value d) values
-      resultText = fmap (pack . show) result
-  text " = "
-  dynText resultText
-  where
-    ops :: Map Op Text
-    ops = Map.fromList [(Plus, "+"), (Minus, "-"), (Times, "*"), (Divide, "/")]
-|]
-```
-[Go to snippet](http://localhost:8000/tutorial/8)
-
-The input border colors will now change depending on their value.
-
-### State Machines
-
-#### Number Pad
+As a slimmed down example, we'll start with a number pad that allows you to type in numbers, and clear them.  We'll start with a numeric keypad:
 
 ```haskell
 numberPad :: (DomBuilder t m) => m (Event t Text)
@@ -413,10 +336,16 @@ numberPad = do
   b8 <- ("8" <$) <$> button "8"
   b9 <- ("9" <$) <$> button "9"
   return $ leftmost [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9]
+```
 
+This definition will come in handy for the more fully worked example.  So `tutorial9` starts by tacking on a button to clear the input, and then uses `accumDyn` to observe button presses and update our widget's state.  Our widget's state is very simple:  it's just `Text`.  The state transition function is also quite simple:  we simply check to see if the clear button was pressed,  and if not, append the Text returned by our `numberPad`.
+
+There are significant potential benefits to testing, reliability and security if you can specify your widget's state transition as a pure function, which we do here.  It provides a high degree of assurance that the transition function does not have complicated interactions with other parts of the system,  and makes it easier to check that part of the logic using say, quickcheck, an SMT solver, model checker, proof assistant, or other formal techniques.  However, if you need it, there is `accumMDyn` which allows the transition function to exhibit certain other effects.
+
+```haskell
 [exampleDec|
-tutorial9 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
-tutorial9 = el "div" $ do
+tutorial8 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
+tutorial8 = el "div" $ do
   numberButton <- numberPad
   clearButton <- button "C"
   let buttons = leftmost
@@ -436,15 +365,17 @@ tutorial9 = el "div" $ do
         Just digit -> state <> digit
 |]
 ```
-[Go to snippet](http://localhost:8000/tutorial/9)
+[Go to snippet](http://localhost:8000/tutorial/8)
 
-#### Four Function Calculator
+### A Minimal Four Function Calculator
+
+For a simple four-function calculator,  we basically just take the previous example and do a lot more of it.  Our widget's state becomes much more complex: in addition to the input,  we have an accumulator which we display when then the input is empty, and we keep track of the most recently requested operation.  Then we have to project the widget state down  `Dynamic` behaviors:  one to determine the `Text` representing the number to display on the screen,  and some ynamic attributes to indicate the selected operation.   While the state transition function is significantly more complicated, it's still a pure function:  as far as Reflex is concerned, it's really no different than the previous implementation.
 
 ```haskell
 data CalcState = CalcState
-  { _calcState_accum :: Double
-  , _calcState_op    :: Maybe Op
-  , _calcState_input :: Text
+  { _calcState_acc   :: Double     -- accumulator
+  , _calcState_op    :: Maybe Op   -- most recently requested operation
+  , _calcState_input :: Text       -- current input
   } deriving (Show)
 
 data Button
@@ -453,9 +384,39 @@ data Button
   | ButtonEq
   | ButtonClear
 
+initCalcState :: CalcState
+initCalcState = CalcState 0 Nothing ""
+
+updateCalcState :: CalcState -> Button -> CalcState
+updateCalcState state@(CalcState accum op input) btn =
+  case btn of
+    ButtonNumber d ->
+      if d == "." && T.find (== '.') input /= Nothing
+      then state
+      else CalcState accum op (input <> d)
+    ButtonOp pushedOp -> applyOp state (Just pushedOp)
+    ButtonEq -> applyOp state Nothing
+    ButtonClear -> initCalcState
+  where
+    applyOp :: CalcState -> Maybe Op -> CalcState
+    applyOp state@(CalcState accum mOp input) mOp' =
+      if T.null input
+      then
+        CalcState accum mOp' input
+      else
+        case readMaybe (unpack input) of
+          Nothing -> state    -- this should be unreachable
+          Just x -> case mOp of
+            Nothing -> CalcState x mOp' ""
+            Just op -> CalcState (runOp op accum x) mOp' ""
+```
+
+A more significant difference from Reflex's perspective is that the number pad displayed the application state directly:  as the state was already `Text`, we could pass it directly to `dynText`.   However,  this time the application state is of type `CalcState`,  so we want to project `CalcState` to a `Text`, which we do inside of `displayState`.   In order to apply `displayState` to the result of `accumDyn`,  we use `Dynamic`'s instance of `Functor` via `<$>`.
+
+```haskell
 [exampleDec|
-tutorial10 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
-tutorial10 = el "div" $ do
+tutorial9 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
+tutorial9 = el "div" $ do
   numberButtons <- numberPad
   bPeriod <- ("." <$) <$> button "."
   bPlus <- (Plus <$) <$> button "+"
@@ -472,37 +433,11 @@ tutorial10 = el "div" $ do
         , ButtonEq <$ bEq
         , ButtonClear <$ bClear
         ]
-  d0 <- accumDyn collectButtonPresses initState buttons
+  d0 <- accumDyn updateCalcState initCalcState buttons
   dynText (debugDisplayState <$> d0)
   el "br" blank
   dynText (displayState <$> d0)
   where
-    initState :: CalcState
-    initState = CalcState 0 Nothing ""
-
-    collectButtonPresses :: CalcState -> Button -> CalcState
-    collectButtonPresses state@(CalcState accum op input) button =
-      case button of
-        ButtonNumber d ->
-          if d == "." && T.find (== '.') input /= Nothing
-          then state
-          else CalcState accum op (input <> d)
-        ButtonOp pushedOp -> apply state (Just pushedOp)
-        ButtonEq -> apply state Nothing
-        ButtonClear -> initState
-
-    apply :: CalcState -> Maybe Op -> CalcState
-    apply state@(CalcState accum mOp input) mOp' =
-      if T.null input
-      then
-        CalcState accum mOp' input
-      else
-        case readMaybe (unpack input) of
-          Nothing -> state    -- this shouldn't happen
-          Just x -> case mOp of
-            Nothing -> CalcState x mOp' ""
-            Just op -> CalcState (runOp op accum x) mOp' ""
-
     displayState :: CalcState -> Text
     displayState (CalcState accum _op input) =
       if T.null input
@@ -511,6 +446,53 @@ tutorial10 = el "div" $ do
 
     debugDisplayState :: CalcState -> Text
     debugDisplayState = T.pack . show
+|]
+```
+[Go to snippet](http://localhost:8000/tutorial/9)
+
+### Dynamic Attributes and Cyclic Dependencies
+
+For our final example,  we will go beyond the limitations of a traditional four-function calculator,  whose feedback was usually limited to a single-row 7-segment display.   We will indicate the selected operation by dynamically changing the background color of the button,  and deal with cyclic dependencies using the recursive do notation.
+
+Note, by using recursive do notation, we can reorder the declarations in any way that we see fit,  thus demonstrating that it's a mistake of assigning an imperative meaning to a Reflex program:  rather, reflex is declaratively specifying relationships between dynamic behaviors.
+
+```haskell
+opButton :: (DomBuilder t m, PostBuild t m) => Op -> Text -> Dynamic t (Maybe Op) -> m (Event t Op)
+opButton op label selectedOp = do
+  (e, _) <- elDynAttr' "button" (pickColor <$> selectedOp) $ text label
+  return (op <$ domEvent Click e)
+  where
+    pickColor mOp =
+      if Just op == mOp
+      then "style" =: "color: red"
+      else Map.empty
+
+[exampleDec|
+tutorial10 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
+tutorial10 = el "div" $ do
+  rec
+    numberButtons <- numberPad
+    bPeriod <- ("." <$) <$> button "."
+    let opState = _calcState_op <$> calcState
+    bPlus <- opButton Plus "+" opState
+    bMinus <- opButton Minus "-" opState
+    bTimes <- opButton Times "*" opState
+    bDivide <- opButton Divide "/" opState
+    let opButtons = leftmost [bPlus, bMinus, bTimes, bDivide]
+    bEq <- button "="
+    bClear <- button "C"
+    let buttons = leftmost
+          [ ButtonNumber <$> numberButtons
+          , ButtonNumber <$> bPeriod
+          , ButtonOp <$> opButtons
+          , ButtonEq <$ bEq
+          , ButtonClear <$ bClear
+          ]
+    calcState <- accumDyn updateCalcState initCalcState buttons
+    dynText (T.pack . show . _calcState_acc <$> calcState)
+    el "br" blank
+    dynText (_calcState_input <$> calcState)
+  return ()
 |]
 ```
 [Go to snippet](http://localhost:8000/tutorial/10)
