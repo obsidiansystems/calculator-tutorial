@@ -443,7 +443,7 @@ opButton op label selectedOp = do
   where
     pickColor mOp =
       if Just op == mOp
-      then "style" =: "backgroud-color: yellow"
+      then "style" =: "color: red"
       else Map.empty
 
 tutorial10 :: (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
