@@ -15,10 +15,14 @@ with pkgs.haskell.lib; {
   ios.bundleIdentifier = "systems.obsidian.obelisk.examples.minimal";
   ios.bundleName = "Obelisk Minimal Example";
   __closureCompilerOptimizationLevel = null;
+  packages = {
+    mmark = hackGet ./dep/mmark;
+    modern-uri = hackGet ./dep/modern-uri;
+  };
   overrides = self: super: {
     temporary = dontCheck super.temporary;
     email-validate = dontCheck super.email-validate;
-    mmark = dontHaddock (self.callCabal2nix "mmark" (hackGet ./dep/mmark) {});
+    modern-uri = pkgs.haskell.lib.doJailbreak super.modern-uri;
     frontend = overrideCabal super.frontend (drv: {
       buildTools = (drv.buildTools or []) ++ [ self.buildHaskellPackages.markdown-unlit ];
     });
