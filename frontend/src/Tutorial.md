@@ -272,7 +272,7 @@ The first argument is the initial value of the `Dropdown`,  which in our case is
 op <- _dropdown_value <$> dropdown Times (constDyn ops) def
 ```
 
-This particular `reflex-dom` widget allows us to dynamically update the list of options.  We don't need this,  so we use `constDyn` to turn `ops` into a dynamic behavior that never changes.  Finally, we use `def` to provide a sensible default configuration.   In our case, the return type of `dropdown` in our case is `m (Dropdown t Op)`,  and we use the accessor `_dropdown_value` to fetch the `Dynamic t Op` that represents the operation currently held in the input box.
+This particular `reflex-dom` widget allows us to dynamically update the list of options.  We don't need this,  so we use `constDyn` to turn `ops` into a dynamic behavior that never changes.  Finally, we use `def` to provide a sensible default configuration.   In our case, the return type of `dropdown` in our case is `m (Dropdown t Op)`,  and we use the accessor `_dropdown_value` to fetch the `Dynamic Op` that represents the operation currently held in the input box.
 
 Our use of `zipDynWith` is very similar to the last tutorial;  but instead of aggregating two `Dynamic`s, now we need to aggregate three.  So we call `zipDynWith` twice.
 
@@ -281,7 +281,7 @@ let values = zipDynWith (,) nx ny
     result = zipDynWith (\o (x,y) -> runOp o <$> x <*> y) op values
 ```
 
-The first call,  we aggregate the state of the two `numberInputs`, `nx` and `ny`, into a pair of numbers.  The result is of type `Dynamic t (Maybe Double, Maybe Double)`, which is then bound to `values`.
+The first call,  we aggregate the state of the two `numberInputs`, `nx` and `ny`, into a pair of numbers.  The result is of type `Dynamic (Maybe Double, Maybe Double)`, which is then bound to `values`.
 
 
 Next, we call `zipDynWith` again, combining `values` with the selected operation `op`. Now, instead of applying `(+)` to our `Double` values, we use `runOp` to select an operation based on the `Dynamic` value of our `Dropdown`.
