@@ -75,13 +75,7 @@ frontend = Frontend
         prerender_ blank $ do
           doc <- askDocument
           liftJSM $ forkJSM $ do
-            let wait = do
-                  els <- getElementsByTagName doc ("pre" :: Text)
-                  n <- getLength els
-                  if n > 0 then return () else do
-                    liftIO $ threadDelay 10000
-                    wait
-            wait
+            getElementsByTagName doc ("pre" :: Text)
             void $ eval @Text "hljs.initHighlighting();"
       FrontendRoute_Tutorial -> subRoute_ $ \case
         TutorialRoute_1 -> tutorial1
