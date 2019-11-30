@@ -39,23 +39,16 @@ import qualified Text.MMark.Internal.Type as MMark
 import Common.Route
 import Reflex.MMark.Render
 import Tutorial
+import Tutorial.Markdown
 
 -- Parses markdown at compile time into AST so no validation errors at run-time.
-parsedMarkdown :: [Either (TutorialRoute ()) MMark.Bni]
-parsedMarkdown = $(do
-  let fp = "README.md"
-  qAddDependentFile fp
-  rawMarkdown <- fmap decodeUtf8 $ runIO $ BS.readFile fp
-  let parseResult = MMark.parse "README.md" rawMarkdown
-  parsed <- case parseResult of
-    Left _ -> do
-      fail "Oops! Couldn't parse README.md. Is it valid markdown?"
-    Right parsed -> pure $ MMark.mmarkBlocks parsed
+parsedTutorial :: [Either (TutorialRoute ()) MMark.Bni]
+parsedTutorial = $(do
   let -- TODO propose Lift1 class for functors
       shallowLiftEither :: Either Exp Exp -> Exp
       shallowLiftEither = either (AppE $ ConE 'Left) (AppE $ ConE 'Right)
       postProcessed :: [Either Name MMark.Bni]
-      postProcessed = go =<< parsed
+      postProcessed = go =<< parsedMarkdown
         where
           go = \case
             cb@(MMark.CodeBlock _ infoString)
@@ -108,13 +101,17 @@ frontend = Frontend
         let renderLink rt = el "p" $
               routeLink (FrontendRoute_Tutorial :/ rt :/ ()) $
                 text "Go to snippet"
-        elAttr "div" ("class" =: "container") $
-          renderReflex' renderLink parsedMarkdown
+
+        -- TODO determine why this block can't be placed after the rendering code below
         prerender_ blank $ do
           doc <- askDocument
           liftJSM $ forkJSM $ do
             _ <- getElementsByTagName doc ("pre" :: Text)
             void $ eval @Text "hljs.initHighlighting();"
+
+        elAttr "div" ("class" =: "container") $ do
+          renderReflex' renderLink parsedTutorial
+
       FrontendRoute_Tutorial -> subRoute_ $ \case
         TutorialRoute_1 -> tutorial1
         TutorialRoute_2 -> tutorial2

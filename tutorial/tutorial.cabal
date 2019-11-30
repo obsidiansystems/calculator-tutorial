@@ -1,43 +1,32 @@
-name: frontend
+name: tutorial
 version: 0.1
 cabal-version: >= 1.8
 build-type: Simple
-extra-source-files: frontend/src/Tutorial.md
 
 library
   hs-source-dirs: src
   build-depends: base
                , bytestring
-               , common
                , containers
                , ghcjs-dom
                , jsaddle
                , lucid
                , markdown-unlit
                , mmark
+               , modern-uri
                , obelisk-executable-config-lookup
                , obelisk-frontend
                , obelisk-generated-static
                , obelisk-route
                , reflex
                , reflex-dom
-               , template-haskell
                , text
-               , tutorial
-  exposed-modules: Frontend
+               -- For the QuasiQuoter
+               , haskell-src-meta
+               , haskell-src-exts
+               , template-haskell
+  exposed-modules:
+    Tutorial
+    Tutorial.Markdown
+    Reflex.MMark.Render
   ghc-options: -Wall -pgmL markdown-unlit
-
-executable frontend
-  main-is: main.hs
-  hs-source-dirs: src-bin
-  build-depends: base
-               , common
-               , obelisk-frontend
-               , obelisk-route
-               , reflex-dom
-               , obelisk-generated-static
-               , frontend
-  --TODO: Make these ghc-options optional
-  ghc-options: -threaded
-  if os(darwin)
-     ghc-options: -dynamic

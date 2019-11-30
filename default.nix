@@ -18,12 +18,17 @@ with pkgs.haskell.lib; {
   packages = {
     mmark = hackGet ./dep/mmark;
     modern-uri = hackGet ./dep/modern-uri;
+    tutorial = ./tutorial;
   };
   overrides = self: super: {
     temporary = dontCheck super.temporary;
     email-validate = dontCheck super.email-validate;
-    modern-uri = pkgs.haskell.lib.doJailbreak super.modern-uri;
+    mmark = if (self.ghc.isGhcjs or false) then dontHaddock super.mmark else super.mmark;
+    modern-uri = doJailbreak super.modern-uri;
     frontend = overrideCabal super.frontend (drv: {
+      buildTools = (drv.buildTools or []) ++ [ self.buildHaskellPackages.markdown-unlit ];
+    });
+    tutorial = overrideCabal super.tutorial (drv: {
       buildTools = (drv.buildTools or []) ++ [ self.buildHaskellPackages.markdown-unlit ];
     });
   };
