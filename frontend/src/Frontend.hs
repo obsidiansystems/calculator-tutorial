@@ -101,13 +101,17 @@ frontend = Frontend
         let renderLink rt = el "p" $
               routeLink (FrontendRoute_Tutorial :/ rt :/ ()) $
                 text "Go to snippet"
-        elAttr "div" ("class" =: "container") $
-          renderReflex' renderLink parsedTutorial
+
+        -- TODO determine why this block can't be placed after the rendering code below
         prerender_ blank $ do
           doc <- askDocument
           liftJSM $ forkJSM $ do
             _ <- getElementsByTagName doc ("pre" :: Text)
             void $ eval @Text "hljs.initHighlighting();"
+
+        elAttr "div" ("class" =: "container") $ do
+          renderReflex' renderLink parsedTutorial
+
       FrontendRoute_Tutorial -> subRoute_ $ \case
         TutorialRoute_1 -> tutorial1
         TutorialRoute_2 -> tutorial2
