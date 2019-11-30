@@ -43,7 +43,7 @@ import Tutorial
 -- Parses markdown at compile time into AST so no validation errors at run-time.
 parsedMarkdown :: [Either (TutorialRoute ()) MMark.Bni]
 parsedMarkdown = $(do
-  let fp = "README.md"
+  let fp = "tutorial/src/Tutorial.md"
   qAddDependentFile fp
   rawMarkdown <- fmap decodeUtf8 $ runIO $ BS.readFile fp
   let parseResult = MMark.parse "README.md" rawMarkdown

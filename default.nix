@@ -18,6 +18,7 @@ with pkgs.haskell.lib; {
   packages = {
     mmark = hackGet ./dep/mmark;
     modern-uri = hackGet ./dep/modern-uri;
+    tutorial = ./tutorial;
   };
   overrides = self: super: {
     temporary = dontCheck super.temporary;
