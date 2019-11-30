@@ -28,5 +28,8 @@ with pkgs.haskell.lib; {
     frontend = overrideCabal super.frontend (drv: {
       buildTools = (drv.buildTools or []) ++ [ self.buildHaskellPackages.markdown-unlit ];
     });
+    tutorial = overrideCabal super.tutorial (drv: {
+      buildTools = (drv.buildTools or []) ++ [ self.buildHaskellPackages.markdown-unlit ];
+    });
   };
 })
