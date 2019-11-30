@@ -72,10 +72,12 @@
 
 .calculator .input .ops-pad button {
     background: orange;
+    color: black;
 }
 
 .calculator .input .other-pad button {
     background: #BBB;
+    color: black;
 }
 
 .calculator .input .number-pad button {
