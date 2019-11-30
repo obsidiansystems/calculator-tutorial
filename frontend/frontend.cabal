@@ -9,7 +9,6 @@ library
   build-depends: base
                , common
                , containers
-               , file-embed
                , ghcjs-dom
                , jsaddle
                , lucid

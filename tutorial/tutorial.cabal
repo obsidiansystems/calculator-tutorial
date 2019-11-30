@@ -6,8 +6,8 @@ build-type: Simple
 library
   hs-source-dirs: src
   build-depends: base
+               , bytestring
                , containers
-               , file-embed
                , ghcjs-dom
                , jsaddle
                , lucid
@@ -27,5 +27,6 @@ library
                , template-haskell
   exposed-modules:
     Tutorial
+    Tutorial.Markdown
     Reflex.MMark.Render
   ghc-options: -Wall -pgmL markdown-unlit
