@@ -23,8 +23,14 @@ library
                , reflex-dom
                , template-haskell
                , text
-               , tutorial
+               , modern-uri
+               , haskell-src-meta
+               , haskell-src-exts
+               , template-haskell
   exposed-modules: Frontend
+                   Tutorial
+                   Tutorial.Markdown
+                   Reflex.MMark.Render
   ghc-options: -Wall -pgmL markdown-unlit
 
 executable frontend

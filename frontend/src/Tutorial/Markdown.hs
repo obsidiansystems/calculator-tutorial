@@ -19,7 +19,7 @@ import qualified Text.MMark.Internal.Type as MMark
 
 parsedMarkdown :: [MMark.Bni]
 parsedMarkdown = $(do
-  let fp = "src/Tutorial.md"
+  let fp = "README.md"
   qAddDependentFile fp
   rawMarkdown <- fmap decodeUtf8 $ runIO $ BS.readFile fp
   let parseResult = MMark.parse "README.md" rawMarkdown
