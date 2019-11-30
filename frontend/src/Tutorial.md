@@ -1,7 +1,5 @@
 # Tutorial
-In this example, we'll be following [Luite Stegemann's lead](http://weblog.luite.com/wordpress/?p=127) and building a simple functional reactive calculator to be used in a web browser.
-
-TODO: Add a brief intro to reflex(-dom)/FRP
+In this example, we'll be following [Luite Stegemann's lead](http://weblog.luite.com/wordpress/?p=127) and building a simple functional reactive calculator to be used in a web browser or as a desktop or mobile app.
 
 ## The structure of this document
 
@@ -16,16 +14,16 @@ You can run this tutorial by:
 
 1. [Installing obelisk](https://github.com/obsidiansystems/obelisk/#installing-obelisk), a framework and development tool for multi-platform Haskell applications.
 
-2. Cloning this repository.
+2. Cloning the calculator-tutorial repository.
 
     ```bash
-    git clone git@github.com:reflex-frp/reflex-calculator-tutorial
+    git clone git@github.com:obsidiansystems/calculator-tutorial
     ```
 
 3. Running the application with the `ob` command.
 
     ```bash
-    cd reflex-calculator-tutorial
+    cd calculator-tutorial
     ob run
     ```
 
