@@ -1,8 +1,9 @@
 # Tutorial
-In this example, we'll be following [Luite Stegemann's lead](http://weblog.luite.com/wordpress/?p=127) and building a simple functional reactive calculator to be used in a web browser.
+In this example, we'll be following [Luite Stegemann's lead](http://weblog.luite.com/wordpress/?p=127) and building a simple functional reactive calculator to be used in a web browser or as a desktop or mobile app.
 
 ### The structure of this document
-This document is a [literate haskell](https://wiki.haskell.org/Literate_programming) source file written in markdown.  We're using [markdown-unlit](https://github.com/sol/markdown-unlit#literate-haskell-support-for-markdown) to process this source file and turn it into something our compiler can understand.
+This document is a [literate haskell](https://wiki.haskell.org/Literate_programming) source file written in markdown.
+We're using [markdown-unlit](https://github.com/sol/markdown-unlit#literate-haskell-support-for-markdown) to process this source file and turn it into something our compiler can understand.
 
 ### Running the code
 
@@ -10,16 +11,16 @@ You can run this tutorial by:
 
 1. [Installing obelisk](https://github.com/obsidiansystems/obelisk/#installing-obelisk), a framework and development tool for multi-platform Haskell applications.
 
-2. Cloning this repository.
+2. Cloning the calculator-tutorial repository.
 
     ```bash
-    git clone git@github.com:reflex-frp/reflex-calculator-tutorial
+    git clone git@github.com:obsidiansystems/calculator-tutorial
     ```
 
 3. Running the application with the `ob` command.
 
     ```bash
-    cd reflex-calculator-tutorial
+    cd calculator-tutorial
     ob run
     ```
 
@@ -66,7 +67,6 @@ Reflex's companion library, Reflex-Dom, contains a number of functions used to b
 tutorial1 :: DomBuilder t m => m ()
 tutorial1 = el "div" $ text "Welcome to Reflex"
 ```
-[Go to snippet](http://localhost:8000/tutorial/1)
 
 `el` has the type signature:
 
@@ -99,7 +99,6 @@ tutorial2 = el "div" $ do
    el "li" $ text "Higher-order"
    el "li" $ text "Glitch-free"
 ```
-[Go to snippet](http://localhost:8000/tutorial/2)
 
 ### Dynamics and Events
 Of course, we want to do more than just view a static webpage. Let's start by getting some user input and printing it.
@@ -111,7 +110,6 @@ tutorial3 = el "div" $ do
   dynText $ _inputElement_value t
 
 ```
-[Go to snippet](http://localhost:8000/tutorial/3)
 
 Running this in your browser, you'll see that it produces a `div` containing an `input` element. When you type into the `input` element, the text you enter appears inside the div as well.
 
@@ -151,7 +149,6 @@ tutorial4 = el "div" $ do
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
   dynText $ _inputElement_value t
 ```
-[Go to snippet](http://localhost:8000/tutorial/4)
 
 The code above overrides some of the default values of the `InputElementConfig`. We provide a `Map Text Text` value for the `inputElementConfig_elementConfig`'s `elementConfig_initialAttributes`, specifying the html input element's `type` attribute to `number`.
 
@@ -173,7 +170,6 @@ tutorial5 = el "div" $ do
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
 ```
-[Go to snippet](http://localhost:8000/tutorial/5)
 
 We've defined a function `numberInput` that both handles the creation of the `InputElement` and reads its value. Recall that `_inputElement_value` gives us a `Dynamic Text`. The final line of code in `numberInput` uses `fmap` to apply the function `readMaybe . unpack` to the `Dynamic` value of the `InputElement`. This produces a `Dynamic (Maybe Double)`. Our `main` function uses `fmap` to map over the `Dynamic (Maybe Double)` produced by `numberInput` and `pack . show` the value it contains. We store the new `Dynamic Text` in `numberString` and feed that into `dynText` to actually display the `Text`
 
@@ -200,7 +196,6 @@ tutorial6 = el "div" $ do
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
 ```
-[Go to snippet](http://localhost:8000/tutorial/6)
 
 `numberInput` hasn't changed here. Our `main` function now creates two inputs. `zipDynWith` is used to produce the actual sum of the values of the inputs. The type signature of `zipDynWith` is:
 
@@ -255,7 +250,6 @@ tutorial7 = el "div" $ do
         & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
       return . fmap (readMaybe . unpack) $ _inputElement_value n
 ```
-[Go to snippet](http://localhost:8000/tutorial/7)
 
 We've covered `numberInput` in our last tutorial; the first new function is `dropdown`, which has type:
 
@@ -362,7 +356,6 @@ tutorial8 = el "div" $ do
         Nothing -> initialState
         Just digit -> state <> digit
 ```
-[Go to snippet](http://localhost:8000/tutorial/8)
 
 
 So `tutorial8` starts by tacking on a button to clear the input.   We then aggregate the events coming from the numberpad with the events coming from the clear button, by marking all the numberpad events with a `Just` constructor and using `Nothing` to represent the clear button.
@@ -445,7 +438,6 @@ tutorial9 = el "div" $ do
   calcState <- accumDyn updateCalcState initCalcState buttons
   dynText (displayCalcState <$> calcState)
 ```
-[Go to snippet](http://localhost:8000/tutorial/9)
 
 ### Dynamic Attributes and Cyclic Dependencies
 
@@ -490,7 +482,6 @@ tutorial10 = el "div" $ do
           then "style" =: "color: red"
           else Map.empty
 ```
-[Go to snippet](http://localhost:8000/tutorial/10)
 
 
 For the final example,  we'll add some extra HTML `div`s and add `class` attributes to a variety of tags in order to make styling the output easier:
@@ -540,8 +531,6 @@ tutorial11 = divClass "calculator" $ do
           then "style" =: "background: lightblue"
           else Map.empty
 ```
-[Go to snippet](http://localhost:8000/tutorial/11)
-
 
 ### In Summary
 

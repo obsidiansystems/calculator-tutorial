@@ -22,7 +22,8 @@ with pkgs.haskell.lib; {
   overrides = self: super: {
     temporary = dontCheck super.temporary;
     email-validate = dontCheck super.email-validate;
-    modern-uri = pkgs.haskell.lib.doJailbreak super.modern-uri;
+    mmark = if (self.ghc.isGhcjs or false) then dontHaddock super.mmark else super.mmark;
+    modern-uri = doJailbreak super.modern-uri;
     frontend = overrideCabal super.frontend (drv: {
       buildTools = (drv.buildTools or []) ++ [ self.buildHaskellPackages.markdown-unlit ];
     });

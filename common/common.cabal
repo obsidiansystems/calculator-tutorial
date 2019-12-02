@@ -8,6 +8,7 @@ library
   build-depends: base
                , obelisk-route
                , mtl
+               , template-haskell
                , text
   default-extensions:
     TypeFamilies

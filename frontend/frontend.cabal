@@ -7,9 +7,9 @@ extra-source-files: frontend/src/Tutorial.md
 library
   hs-source-dirs: src
   build-depends: base
+               , bytestring
                , common
                , containers
-               , file-embed
                , ghcjs-dom
                , jsaddle
                , lucid
@@ -21,10 +21,16 @@ library
                , obelisk-route
                , reflex
                , reflex-dom
+               , template-haskell
                , text
-  exposed-modules:
-    Frontend
-    Tutorial
+               , modern-uri
+               , haskell-src-meta
+               , haskell-src-exts
+               , template-haskell
+  exposed-modules: Frontend
+                   Tutorial
+                   Tutorial.Markdown
+                   Reflex.MMark.Render
   ghc-options: -Wall -pgmL markdown-unlit
 
 executable frontend

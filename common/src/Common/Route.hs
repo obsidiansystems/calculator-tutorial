@@ -1,4 +1,5 @@
 {-# LANGUAGE EmptyCase #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -9,6 +10,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Common.Route where
 
@@ -19,6 +22,7 @@ import Control.Category
 
 import Data.Text (Text)
 import Data.Functor.Identity
+import "template-haskell" Language.Haskell.TH.Syntax
 
 import Obelisk.Route
 import Obelisk.Route.TH
@@ -41,6 +45,8 @@ data TutorialRoute :: * -> * where
   TutorialRoute_9 :: TutorialRoute ()
   TutorialRoute_10 :: TutorialRoute ()
   TutorialRoute_11 :: TutorialRoute ()
+
+deriving instance Lift (TutorialRoute ())
 
 data FrontendRoute :: * -> * where
   FrontendRoute_Main :: FrontendRoute ()
