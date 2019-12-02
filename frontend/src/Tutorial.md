@@ -110,6 +110,7 @@ Of course, we want to do more than just view a static webpage. Let's start by ge
 tutorial3 :: (DomBuilder t m, PostBuild t m) => m ()
 tutorial3 = el "div" $ do
   t <- inputElement def
+  text " "
   dynText $ _inputElement_value t
 
 ```
@@ -150,6 +151,7 @@ tutorial4 = el "div" $ do
   t <- inputElement $ def
     & inputElementConfig_initialValue .~ "0"
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ ("type" =: "number")
+  text " "
   dynText $ _inputElement_value t
 ```
 
@@ -164,6 +166,7 @@ tutorial5 :: (DomBuilder t m, PostBuild t m) => m ()
 tutorial5 = el "div" $ do
   x <- numberInput
   let numberString = fmap (pack . show) x
+  text " "
   dynText numberString
   where
     numberInput :: DomBuilder t m => m (Dynamic t (Maybe Double))
@@ -348,6 +351,7 @@ tutorial8 = el "div" $ do
         , Just <$> numberButton
         ]
   dstate <- accumDyn collectButtonPresses initialState buttons
+  text " "
   dynText dstate
   where
     initialState :: Text
@@ -439,6 +443,7 @@ tutorial9 = el "div" $ do
         , ButtonClear <$ bClear
         ]
   calcState <- accumDyn updateCalcState initCalcState buttons
+  text " "
   dynText (displayCalcState <$> calcState)
 ```
 
@@ -470,6 +475,7 @@ tutorial10 = el "div" $ do
           , ButtonClear <$ bClear
           ]
     calcState <- accumDyn updateCalcState initCalcState buttons
+    text " "
     dynText (T.pack . show . _calcState_acc <$> calcState)
     el "br" blank
     dynText (_calcState_input <$> calcState)
