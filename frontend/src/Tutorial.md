@@ -1,9 +1,7 @@
 # Tutorial
 In this example, we'll be following [Luite Stegemann's lead](http://weblog.luite.com/wordpress/?p=127) and building a simple functional reactive calculator to be used in a web browser or as a desktop or mobile app.
 
-## The structure of this document
-
-### Literate Haskell
+### The structure of this document
 
 This document is a [literate haskell](https://wiki.haskell.org/Literate_programming) source file written in markdown.
 We're using [markdown-unlit](https://github.com/sol/markdown-unlit#literate-haskell-support-for-markdown) to process this source file and turn it into something our compiler can understand.
