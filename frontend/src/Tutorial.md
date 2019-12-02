@@ -1,11 +1,7 @@
 # Tutorial
 In this example, we'll be following [Luite Stegemann's lead](http://weblog.luite.com/wordpress/?p=127) and building a simple functional reactive calculator to be used in a web browser.
 
-TODO: Add a brief intro to reflex(-dom)/FRP
-
-## The structure of this document
-
-### Literate Haskell
+### The structure of this document
 This document is a [literate haskell](https://wiki.haskell.org/Literate_programming) source file written in markdown.  We're using [markdown-unlit](https://github.com/sol/markdown-unlit#literate-haskell-support-for-markdown) to process this source file and turn it into something our compiler can understand.
 
 ### Running the code
@@ -455,7 +451,7 @@ tutorial9 = el "div" $ do
 
 For our final example,  we will go beyond the limitations of a traditional four-function calculator,  whose feedback was usually limited to a single-row 7-segment display.   We will indicate the selected operation by dynamically changing the background color of the button,  and deal with cyclic dependencies using the recursive do notation.  Instead of collapsing the accumulator and input registers, we'll simply display them both,  as if we had a 2-line 7 segment display.  And in doing so, the widget's entire state is visually presented to the user; nothing is hidden.
 
-Note, by using recursive do notation, we can reorder the declarations in any way that we see fit,  thus demonstrating that it's a mistake of assigning an imperative meaning to a Reflex program:  rather, reflex is declaratively specifying relationships between dynamic behaviors.
+Note, by using recursive do notation, we can reorder the declarations in any way that we see fit:  doing so usually reorders HTML tags,  but will not change the dynamic relationship between widgets.  Thus, it's a mistake to read a Reflex program in an overly imperative way;  instead you are declaring behaviors and scoping how they interact with other parts of the system.
 
 ```haskell
 tutorial10 :: forall t m. (DomBuilder t m, MonadHold t m, MonadFix m, PostBuild t m) => m ()
