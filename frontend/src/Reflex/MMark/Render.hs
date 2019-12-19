@@ -17,6 +17,7 @@ module Reflex.MMark.Render
   ( renderReflex
   , defaultBlockRender
   , defaultInlineRender
+  , defaultLinkRender
   ) where
 
 import Control.Arrow
@@ -26,7 +27,9 @@ import Data.Function (fix)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as M
+import Data.Text (Text)
 import qualified Data.Text as T
+import Text.URI (URI)
 import qualified Text.URI as URI
 import Reflex.Dom hiding (Link)
 import Text.MMark.Internal.Type hiding (Render (..))
@@ -49,7 +52,7 @@ renderReflex md = mapM_ rBlock md
       = fix defaultBlockRender
       . fmap rInlines
     rInlines
-      = (mkOisInternal &&& mapM_ (fix defaultInlineRender))
+      = mkOisInternal &&& mapM_ (fix $ defaultInlineRender defaultLinkRender)
 
 -- | The default 'Block' render. Note that it does not care about what we
 -- have rendered so far because it always starts rendering. Thus it's OK to
@@ -121,10 +124,12 @@ defaultBlockRender blockRender = \case
 
 defaultInlineRender
   :: DomBuilder t m
-  => (Inline -> m ())
+  => (URI -> Maybe Text -> m () -> m ())
+     -- ^ Rendering function to use to render links.
+  -> (Inline -> m ())
      -- ^ Rendering function to use to render sub-inlines
   -> Inline -> m ()
-defaultInlineRender inlineRender = \case
+defaultInlineRender linkRender inlineRender = \case
   Plain txt ->
     text txt
   LineBreak ->
@@ -141,9 +146,13 @@ defaultInlineRender inlineRender = \case
     el "sup" (mapM_ inlineRender inner)
   CodeSpan txt ->
     el "code" (text txt)
-  Link inner dest mtitle ->
-    let title = maybe M.empty ("title" =:) mtitle
-    in elAttr "a" ("href" =: URI.render dest <> title) $ mapM_ inlineRender inner
+  Link inner dest mtitle -> do
+    linkRender dest mtitle $ mapM_ inlineRender inner
   Image desc src mtitle ->
     let title = maybe M.empty ("title" =:) mtitle
     in elAttr "img" ("alt" =: asPlainText desc <> "src" =: URI.render src <> title) blank
+
+defaultLinkRender :: (DomBuilder t m) => URI -> Maybe Text -> m a -> m a
+defaultLinkRender dest mtitle m = do
+  let title = maybe M.empty ("title" =:) mtitle
+  elAttr "a" ("href" =: URI.render dest <> title) m
