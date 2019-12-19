@@ -78,7 +78,7 @@ renderReflex' f md = mapM_ (either f rBlock) md
       = fix defaultBlockRender
       . fmap rInlines
     rInlines
-      = (MMark.mkOisInternal &&& mapM_ (fix defaultInlineRender))
+      = MMark.mkOisInternal &&& mapM_ (fix $ defaultInlineRender defaultLinkRender)
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
