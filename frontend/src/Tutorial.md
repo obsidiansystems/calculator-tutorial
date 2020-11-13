@@ -407,7 +407,7 @@ applyOp state@(CalcState acc mOp input) mOp' =
     CalcState acc mOp' input
   else
     case readMaybe (unpack input) of
-      Nothing -> state    -- this should be unreachable
+      Nothing -> state
       Just x -> case mOp of
         Nothing -> CalcState x mOp' ""
         Just op -> CalcState (runOp op acc x) mOp' ""
